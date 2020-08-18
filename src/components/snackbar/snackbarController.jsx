@@ -1,6 +1,5 @@
 import React, { Component } from "react";
 import { withStyles } from '@material-ui/core/styles';
-import { colors } from '../../theme'
 
 import Snackbar from './snackbar.jsx'
 

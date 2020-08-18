@@ -6,17 +6,20 @@ import {
   TextField,
   Button
 } from '@material-ui/core';
+import { colors } from '../../theme'
 
 import {
   ERROR,
-  DEPOSIT_LP,
-  DEPOSIT_LP_RETURNED,
-  WITHDRAW_LP,
-  WITHDRAW_LP_RETURNED,
-  DEPOSIT_ALL_LP,
-  DEPOSIT_ALL_LP_RETURNED,
-  WITHDRAW_ALL_LP,
-  WITHDRAW_ALL_LP_RETURNED
+  DEPOSIT_INSURED,
+  DEPOSIT_INSURED_RETURNED,
+  WITHDRAW_INSURED,
+  WITHDRAW_INSURED_RETURNED,
+  DEPOSIT_ALL_INSURED,
+  DEPOSIT_ALL_INSURED_RETURNED,
+  WITHDRAW_ALL_INSURED,
+  WITHDRAW_ALL_INSURED_RETURNED,
+  // CLAIM_INSURED,
+  // CLAIM_INSURED_RETURNED
 } from '../../constants'
 
 import Store from "../../stores";
@@ -43,6 +46,7 @@ const styles = theme => ({
     paddingBottom: '12px',
     display: 'flex',
     flex: '1',
+    flexWrap: 'wrap',
     [theme.breakpoints.down('sm')]: {
       flexDirection: 'column'
     }
@@ -54,6 +58,28 @@ const styles = theme => ({
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
+    alignItems: 'center',
+    minWidth: '300px',
+    paddingBottom: '12px'
+  },
+  infoContainer: {
+    width: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    background: colors.lightLightGray,
+    borderRadius: '40px',
+    padding: '24px',
+  },
+  infoHeading: {
+    paddingBottom: '12px',
+    width: '100%'
+  },
+  info: {
+    display: 'flex',
+    width: '100%',
+    justifyContent: 'space-between',
     alignItems: 'center'
   },
   sepperator: {
@@ -64,6 +90,11 @@ const styles = theme => ({
       borderBottom: 'none',
       margin: '0px'
     }
+  },
+  horizontalSeperator: {
+    borderBottom: '1px solid #E1E1E1',
+    margin: '24px',
+    width: '100%'
   },
   scaleContainer: {
     display: 'flex',
@@ -76,6 +107,10 @@ const styles = theme => ({
     minWidth: '10px'
   },
   buttonText: {
+    fontWeight: '700',
+  },
+  containedButtonText: {
+    color: colors.white,
     fontWeight: '700',
   },
   buttons: {
@@ -105,18 +140,20 @@ class Asset extends Component {
   }
 
   componentWillMount() {
-    emitter.on(DEPOSIT_LP_RETURNED, this.depositReturned);
-    emitter.on(WITHDRAW_LP_RETURNED, this.withdrawReturned);
-    emitter.on(DEPOSIT_ALL_LP_RETURNED, this.depositReturned);
-    emitter.on(WITHDRAW_ALL_LP_RETURNED, this.withdrawReturned);
+    emitter.on(DEPOSIT_INSURED_RETURNED, this.depositReturned);
+    emitter.on(WITHDRAW_INSURED_RETURNED, this.withdrawReturned);
+    emitter.on(DEPOSIT_ALL_INSURED_RETURNED, this.depositReturned);
+    emitter.on(WITHDRAW_ALL_INSURED_RETURNED, this.withdrawReturned);
+    // emitter.on(CLAIM_INSURED, this.claimReturned);
     emitter.on(ERROR, this.errorReturned);
   }
 
   componentWillUnmount() {
-    emitter.removeListener(DEPOSIT_LP_RETURNED, this.depositReturned);
-    emitter.removeListener(WITHDRAW_LP_RETURNED, this.withdrawReturned);
-    emitter.removeListener(DEPOSIT_ALL_LP_RETURNED, this.depositReturned);
-    emitter.removeListener(WITHDRAW_ALL_LP_RETURNED, this.withdrawReturned);
+    emitter.removeListener(DEPOSIT_INSURED_RETURNED, this.depositReturned);
+    emitter.removeListener(WITHDRAW_INSURED_RETURNED, this.withdrawReturned);
+    emitter.removeListener(DEPOSIT_ALL_INSURED_RETURNED, this.depositReturned);
+    emitter.removeListener(WITHDRAW_ALL_INSURED_RETURNED, this.withdrawReturned);
+    // emitter.removeListener(CLAIM_INSURED, this.claimReturned);
     emitter.removeListener(ERROR, this.errorReturned);
   };
 
@@ -125,8 +162,13 @@ class Asset extends Component {
     this.props.stopLoading()
   };
 
-  withdrawReturned = (txHash) => {
+  withdrawReturned = () => {
     this.setState({ loading: false, redeemAmount: '' })
+    this.props.stopLoading()
+  };
+
+  claimReturned = () => {
+    this.setState({ loading: false })
     this.props.stopLoading()
   };
 
@@ -138,13 +180,23 @@ class Asset extends Component {
   render() {
     const { classes, asset } = this.props;
     const {
-      account,
       amount,
       amountError,
       redeemAmount,
       redeemAmountError,
       loading
     } = this.state
+
+    let insuredAmount = 0
+
+    if(amount && amount !== '') {
+      insuredAmount = amount
+    } else if (asset.balance) {
+      insuredAmount = (Math.floor(asset.balance*10000)/10000).toFixed(4)
+    }
+
+    const initiationFee = (insuredAmount * 0.001).toFixed(4)
+    const weeklyFee = (insuredAmount * 0.0001).toFixed(4)
 
     return (<div className={ classes.actionsContainer }>
       <div className={ classes.tradeContainer }>
@@ -202,28 +254,48 @@ class Asset extends Component {
             className={ classes.actionButton }
             variant="outlined"
             color="primary"
-            disabled={ loading || !account.address || asset.balance <= 0 }
+            disabled={ loading || asset.balance <= 0 }
             onClick={ this.onDeposit }
             fullWidth
             >
-            <Typography className={ classes.buttonText } variant={ 'h5'} color={asset.disabled?'':'secondary'}>Deposit</Typography>
+            <Typography className={ classes.buttonText } variant={ 'h5'} color={asset.disabled?'':'secondary'}>Insure</Typography>
           </Button>
           <Button
             className={ classes.actionButton }
             variant="outlined"
             color="primary"
-            disabled={ loading || !account.address || asset.balance <= 0 }
+            disabled={ loading || asset.balance <= 0 }
             onClick={ this.onDepositAll }
             fullWidth
             >
-            <Typography className={ classes.buttonText } variant={ 'h5'} color={asset.disabled?'':'secondary'}>Deposit All</Typography>
+            <Typography className={ classes.buttonText } variant={ 'h5'} color={asset.disabled?'':'secondary'}>Insure All</Typography>
           </Button>
         </div>
       </div>
       <div className={ classes.sepperator }></div>
       <div className={classes.tradeContainer}>
+        <div className={ classes.infoContainer} >
+          <div className={ classes.infoHeading }>
+            <Typography variant='h3'>Insurance Fee Structure</Typography>
+          </div>
+          <div className={ classes.info }>
+            <Typography variant='body1'>Insured Amount</Typography>
+            <Typography variant='h4'>{ insuredAmount } { asset.symbol }</Typography>
+          </div>
+          <div className={ classes.info }>
+            <Typography variant='body1'>Initation Fee - 0.1%</Typography>
+            <Typography variant='h4'>{ initiationFee } { asset.symbol }</Typography>
+          </div>
+          <div className={ classes.info }>
+            <Typography variant='body1'>Weekly Fee - 0.01%</Typography>
+            <Typography variant='h4'>{ weeklyFee } { asset.symbol }</Typography>
+          </div>
+        </div>
+      </div>
+      <div className={ classes.horizontalSeperator }></div>
+      <div className={classes.tradeContainer}>
         <div className={ classes.balances }>
-          <Typography variant='h4' onClick={ () => { this.setRedeemAmount(100) } }  className={ classes.value } noWrap>{ asset.vaultBalance ? (Math.floor(asset.vaultBalance*10000)/10000).toFixed(4) : '0.0000' } { asset.vaultSymbol } ({ (asset.vaultBalance ? (Math.floor(asset.vaultBalance*asset.pricePerFullShare*10000)/10000).toFixed(4) : '0.0000') } { asset.symbol }) </Typography>
+          <Typography variant='h4' onClick={ () => { this.setRedeemAmount(100) } }  className={ classes.value } noWrap>{ asset.insuredBalance ? (Math.floor(asset.insuredBalance*10000)/10000).toFixed(4) : '0.0000' } { asset.insuredSymbol } </Typography>
         </div>
         <TextField
           fullWidth
@@ -276,7 +348,7 @@ class Asset extends Component {
             className={ classes.actionButton }
             variant="outlined"
             color="primary"
-            disabled={ loading || !account.address || asset.vaultBalance <= 0 }
+            disabled={ loading || asset.insuredBalance <= 0 }
             onClick={ this.onWithdraw }
             fullWidth
             >
@@ -286,13 +358,29 @@ class Asset extends Component {
             className={ classes.actionButton }
             variant="outlined"
             color="primary"
-            disabled={ loading || !account.address || asset.vaultBalance <= 0 }
+            disabled={ loading || asset.insuredBalance <= 0 }
             onClick={ this.onWithdrawAll }
             fullWidth
             >
             <Typography className={ classes.buttonText } variant={ 'h5'} color='secondary'>Withdraw All</Typography>
           </Button>
         </div>
+      </div>
+      <div className={ classes.sepperator }></div>
+      <div className={classes.tradeContainer}>
+        <div className={ classes.infoHeading }>
+          <Typography variant='h3'>Submit a Claim</Typography>
+        </div>
+        <Button
+          className={ classes.actionButton }
+          variant="contained"
+          color="secondary"
+          disabled={ loading || asset.insuredBalance <= 0 }
+          onClick={ this.onClaim }
+          fullWidth
+          >
+          <Typography className={ classes.containedButtonText } variant={ 'h5'} color='secondary'>Claim</Typography>
+        </Button>
       </div>
     </div>)
   };
@@ -309,6 +397,16 @@ class Asset extends Component {
     }
   }
 
+  onClaim = () => {
+    // this.setState({ amountError: false })
+    //
+    // const { asset, startLoading } = this.props
+    //
+    // this.setState({ loading: true })
+    // startLoading()
+    // dispatcher.dispatch({ type: CLAIM_INSURED, content: { asset: asset } })
+  }
+
   onDeposit = () => {
     this.setState({ amountError: false })
 
@@ -322,7 +420,7 @@ class Asset extends Component {
 
     this.setState({ loading: true })
     startLoading()
-    dispatcher.dispatch({ type: DEPOSIT_LP, content: { amount: amount, asset: asset } })
+    dispatcher.dispatch({ type: DEPOSIT_INSURED, content: { amount: amount, asset: asset } })
   }
 
   onDepositAll = () => {
@@ -330,7 +428,7 @@ class Asset extends Component {
 
     this.setState({ loading: true })
     startLoading()
-    dispatcher.dispatch({ type: DEPOSIT_ALL_LP, content: { asset: asset } })
+    dispatcher.dispatch({ type: DEPOSIT_ALL_INSURED, content: { asset: asset } })
   }
 
   onWithdraw = () => {
@@ -339,7 +437,7 @@ class Asset extends Component {
     const { redeemAmount } = this.state
     const { asset, startLoading  } = this.props
 
-    if(!redeemAmount || isNaN(redeemAmount) || redeemAmount <= 0 || redeemAmount > asset.vaultBalance) {
+    if(!redeemAmount || isNaN(redeemAmount) || redeemAmount <= 0 || redeemAmount > asset.insuredBalance) {
       this.setState({ redeemAmountError: true })
       return false
     }
@@ -347,7 +445,7 @@ class Asset extends Component {
     this.setState({ loading: true })
     startLoading()
 
-    dispatcher.dispatch({ type: WITHDRAW_LP, content: { amount: redeemAmount, asset: asset } })
+    dispatcher.dispatch({ type: WITHDRAW_INSURED, content: { amount: redeemAmount, asset: asset } })
   }
 
   onWithdrawAll = () => {
@@ -355,7 +453,7 @@ class Asset extends Component {
 
     this.setState({ loading: true })
     startLoading()
-    dispatcher.dispatch({ type: WITHDRAW_ALL_LP, content: { asset: asset } })
+    dispatcher.dispatch({ type: WITHDRAW_ALL_INSURED, content: { asset: asset } })
   }
 
   setAmount = (percent) => {
@@ -377,7 +475,7 @@ class Asset extends Component {
       return
     }
 
-    const balance = this.props.asset.vaultBalance
+    const balance = this.props.asset.insuredBalance
     let amount = balance*percent/100
     amount = Math.floor(amount*10000)/10000;
 

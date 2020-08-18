@@ -14,8 +14,8 @@ import Asset from './asset'
 import Loader from '../loader'
 
 import {
-  GET_LP_BALANCES,
-  LP_BALANCES_RETURNED,
+  GET_INSURED_BALANCES,
+  INSURED_BALANCES_RETURNED,
 } from '../../constants'
 
 import Store from "../../stores";
@@ -28,7 +28,7 @@ const styles = theme => ({
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
-    maxWidth: '1200px',
+    maxWidth: '900px',
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center'
@@ -100,7 +100,7 @@ const styles = theme => ({
   },
 });
 
-class LP extends Component {
+class Insure extends Component {
 
   constructor(props) {
     super()
@@ -108,25 +108,25 @@ class LP extends Component {
     const account = store.getStore('account')
 
     this.state = {
-      assets: store.getStore('lpAssets'),
+      assets: store.getStore('insuredAssets'),
       account: account
     }
 
     if(account && account.address) {
-      dispatcher.dispatch({ type: GET_LP_BALANCES, content: {} })
+      dispatcher.dispatch({ type: GET_INSURED_BALANCES, content: {} })
     }
   }
 
   componentWillMount() {
-    emitter.on(LP_BALANCES_RETURNED, this.balancesReturned);
+    emitter.on(INSURED_BALANCES_RETURNED, this.balancesReturned);
   }
 
   componentWillUnmount() {
-    emitter.removeListener(LP_BALANCES_RETURNED, this.balancesReturned);
+    emitter.removeListener(INSURED_BALANCES_RETURNED, this.balancesReturned);
   };
 
   balancesReturned = (balances) => {
-    this.setState({ assets: store.getStore('lpAssets') })
+    this.setState({ assets: store.getStore('insuredAssets') })
   };
 
   render() {
@@ -149,6 +149,14 @@ class LP extends Component {
     const width = window.innerWidth
 
     return assets.map((asset) => {
+
+      let assetImage = ''
+      try {
+        assetImage = require('../../assets/'+asset.symbol+'-logo.png')
+      } catch (e) {
+        assetImage = require('../../assets/YFI-logo.png')
+      }
+
       return (
         <Accordion className={ classes.expansionPanel } square key={ asset.id+"_expand" } expanded={ expanded === asset.id} onChange={ () => { this.handleChange(asset.id) } }>
           <AccordionSummary
@@ -161,7 +169,7 @@ class LP extends Component {
                 <div className={ classes.assetIcon }>
                   <img
                     alt=""
-                    src={ require('../../assets/'+asset.symbol+'-logo.png') }
+                    src={ assetImage }
                     height={ width > 600 ? '40px' : '30px'}
                     style={asset.disabled?{filter:'grayscale(100%)'}:{}}
                   />
@@ -170,10 +178,6 @@ class LP extends Component {
                   <Typography variant={ 'h3' }>{ asset.name }</Typography>
                   <Typography variant={ 'h5' } className={ classes.grey }>{ asset.description }</Typography>
                 </div>
-              </div>
-              <div className={classes.heading}>
-                <Typography variant={ 'h3' }>{ (asset.apy ? (asset.apy).toFixed(4) : '0.0000') }%</Typography>
-                <Typography variant={ 'h5' } className={ classes.grey }>Interest Rate</Typography>
               </div>
               <div className={classes.heading}>
                 <Typography variant={ 'h3' }>{ (asset.balance ? (asset.balance).toFixed(4) : '0.0000')+' '+asset.symbol }</Typography>
@@ -202,4 +206,4 @@ class LP extends Component {
   }
 }
 
-export default withRouter(withStyles(styles)(LP));
+export default withRouter(withStyles(styles)(Insure));

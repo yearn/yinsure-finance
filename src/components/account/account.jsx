@@ -8,12 +8,6 @@ import {
 import { colors } from '../../theme'
 
 import UnlockModal from '../unlock/unlockModal.jsx'
-import RefreshIcon from '@material-ui/icons/Refresh';
-
-import Store from "../../stores";
-const emitter = Store.emitter
-const dispatcher = Store.dispatcher
-const store = Store.store
 
 const styles = theme => ({
   root: {
@@ -88,11 +82,8 @@ class Account extends Component {
   constructor(props) {
     super()
 
-    const account = store.getStore('account')
-
     this.state = {
       loading: false,
-      assets: store.getStore('assets'),
       modalOpen: false,
     }
   }

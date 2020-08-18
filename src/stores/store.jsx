@@ -1,15 +1,14 @@
 import config from "../config";
 import async from 'async';
 import {
-  SNACKBAR_MESSAGE,
   SNACKBAR_ERROR,
   SNACKBAR_TRANSACTION_RECEIPT,
   SNACKBAR_TRANSACTION_CONFIRMED,
   ERROR,
-  GET_BALANCES,
-  BALANCES_RETURNED,
   GET_BALANCES_PERPETUAL,
   BALANCES_PERPETUAL_RETURNED,
+  GET_LP_BALANCES,
+  LP_BALANCES_RETURNED,
   DEPOSIT_LP,
   DEPOSIT_LP_RETURNED,
   DEPOSIT_ALL_LP,
@@ -18,6 +17,16 @@ import {
   WITHDRAW_LP_RETURNED,
   WITHDRAW_ALL_LP,
   WITHDRAW_ALL_LP_RETURNED,
+  GET_INSURED_BALANCES,
+  INSURED_BALANCES_RETURNED,
+  DEPOSIT_INSURED,
+  DEPOSIT_INSURED_RETURNED,
+  DEPOSIT_ALL_INSURED,
+  DEPOSIT_ALL_INSURED_RETURNED,
+  WITHDRAW_INSURED,
+  WITHDRAW_INSURED_RETURNED,
+  WITHDRAW_ALL_INSURED,
+  WITHDRAW_ALL_INSURED_RETURNED,
 } from '../constants';
 import Web3 from 'web3';
 
@@ -71,13 +80,28 @@ class Store {
           name: 'USD Coin',
           symbol: 'USDC',
           description: 'USD//C',
-          poolSymbol: 'yUSDC',
+          vaultSymbol: 'yiUSDC',
           erc20address: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
           vaultContractAddress: config.LPVaultContractAddress,
           vaultContractABI: config.LPVaultContractABI,
           balance: 0,
           vaultBalance: 0,
           decimals: 6,
+        }
+      ],
+      insuredAssets: [
+        {
+          id: 'yUSD',
+          name: 'Wrapped yCRV',
+          symbol: 'yUSD',
+          description: 'Wrapped yCRV',
+          insuredSymbol: 'iyUSD',
+          erc20address: '0x5dbcF33D8c2E976c6b560249878e6F1491Bca25c',
+          insuranceContractAddress: config.InsuredVaultContractAddress,
+          insuranceContractABI: config.InsuredVaultContractABI,
+          balance: 0,
+          insuredBalance: 0,
+          decimals: 18,
         }
       ],
     }
@@ -88,8 +112,8 @@ class Store {
           case GET_BALANCES_PERPETUAL:
             this.getBalancesPerpetual(payload);
             break;
-          case GET_BALANCES:
-            this.getBalances(payload);
+          case GET_LP_BALANCES:
+            this.getLPBalances(payload);
             break;
           case DEPOSIT_LP:
             this.depositLP(payload)
@@ -102,6 +126,21 @@ class Store {
             break;
           case WITHDRAW_ALL_LP:
             this.withdrawAllLP(payload)
+            break;
+          case GET_INSURED_BALANCES:
+            this.getInsuredBalances(payload);
+            break;
+          case DEPOSIT_INSURED:
+            this.depositInsured(payload)
+            break;
+          case DEPOSIT_ALL_INSURED:
+            this.depositAllInsured(payload)
+            break;
+          case WITHDRAW_INSURED:
+            this.withdrawInsured(payload)
+            break;
+          case WITHDRAW_ALL_INSURED:
+            this.withdrawAllInsured(payload)
             break;
           default: {
           }
@@ -127,12 +166,12 @@ class Store {
       const allowance = await erc20Contract.methods.allowance(account.address, contract).call({ from: account.address })
 
       let ethAllowance = web3.utils.fromWei(allowance, "ether")
-      if (asset.decimals != 18) {
+      if (asset.decimals !== 18) {
         ethAllowance = (allowance*10**asset.decimals).toFixed(0);
       }
 
       var amountToSend = web3.utils.toWei('999999999', "ether")
-      if (asset.decimals != 18) {
+      if (asset.decimals !== 18) {
         amountToSend = (999999999*10**asset.decimals).toFixed(0);
       }
 
@@ -152,15 +191,47 @@ class Store {
 
   getBalancesPerpetual = async () => {
     const account = store.getStore('account')
-    const assets = store.getStore('lpAssets')
+    const lpAssets = store.getStore('lpAssets')
+    const insuredAssets = store.getStore('insuredAssets')
 
     const web3 = this._getProvider()
 
+    async.parallel([
+      (callback) => { this._getLPBalancesPerpetual(web3, lpAssets, account, callback) },
+      (callback) => { this._getInsuredBalancesPerpetual(web3, insuredAssets, account, callback) },
+    ], (err, assets) => {
+      if(err) {
+        return emitter.emit(ERROR, err)
+      }
+
+      store.setStore({ lpAssets: assets[0], insuredAssets: assets[1] })
+
+      emitter.emit(BALANCES_PERPETUAL_RETURNED, assets)
+      emitter.emit(LP_BALANCES_RETURNED, assets[0])
+      emitter.emit(INSURED_BALANCES_RETURNED, assets[1])
+    })
+  }
+
+  _getInsuredBalancesPerpetual= (web3, assets, account, cb) => {
+    async.map(assets, (asset, callback) => {
+      async.parallel([
+        (callbackInner) => { this._getERC20Balance(web3, asset, account, callbackInner) },
+        (callbackInner) => { this._getInsuredBalance(web3, asset, account, callbackInner) },
+      ], (err, data) => {
+        asset.balance = data[0]
+        asset.insuredBalance = data[1]
+
+        callback(null, asset)
+      })
+    }, cb)
+  }
+
+  _getLPBalancesPerpetual = (web3, assets, account, cb) => {
     async.map(assets, (asset, callback) => {
       async.parallel([
         (callbackInner) => { this._getERC20Balance(web3, asset, account, callbackInner) },
         (callbackInner) => { this._getVaultBalance(web3, asset, account, callbackInner) },
-        (callbackInner) => { this._getPricePerFullShare(web3, asset, account, callbackInner) },
+        (callbackInner) => { this._getVaultPricePerFullShare(web3, asset, account, callbackInner) },
       ], (err, data) => {
         asset.balance = data[0]
         asset.vaultBalance = data[1]
@@ -168,18 +239,10 @@ class Store {
 
         callback(null, asset)
       })
-    }, (err, assets) => {
-      if(err) {
-        return emitter.emit(ERROR, err)
-      }
-
-      store.setStore({ assets: assets })
-      emitter.emit(BALANCES_PERPETUAL_RETURNED, assets)
-      emitter.emit(BALANCES_RETURNED, assets)
-    })
+    }, cb)
   }
 
-  getBalances = async () => {
+  getLPBalances = async () => {
     const account = store.getStore('account')
     const assets = store.getStore('lpAssets')
 
@@ -189,7 +252,7 @@ class Store {
       async.parallel([
         (callbackInner) => { this._getERC20Balance(web3, asset, account, callbackInner) },
         (callbackInner) => { this._getVaultBalance(web3, asset, account, callbackInner) },
-        (callbackInner) => { this._getPricePerFullShare(web3, asset, account, callbackInner) },
+        (callbackInner) => { this._getVaultPricePerFullShare(web3, asset, account, callbackInner) },
       ], (err, data) => {
         asset.balance = data[0]
         asset.vaultBalance = data[1]
@@ -203,7 +266,7 @@ class Store {
       }
 
       store.setStore({ assets: assets })
-      emitter.emit(BALANCES_RETURNED, assets)
+      emitter.emit(LP_BALANCES_RETURNED, assets)
     })
   }
 
@@ -233,7 +296,7 @@ class Store {
     }
   }
 
-  _getPricePerFullShare = async (web3, asset, account, callback) => {
+  _getVaultPricePerFullShare = async (web3, asset, account, callback) => {
     try {
       const vaultContract = new web3.eth.Contract(asset.vaultContractABI, asset.vaultContractAddress)
 
@@ -438,6 +501,270 @@ class Store {
     const vaultContract = new web3.eth.Contract(asset.vaultContractABI, asset.vaultContractAddress)
 
     vaultContract.methods.withdrawAll().send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
+      .on('transactionHash', function(hash){
+        emitter.emit(SNACKBAR_TRANSACTION_RECEIPT, hash)
+        callback(null, hash)
+      })
+      .on('confirmation', function(confirmationNumber, receipt){
+        if(confirmationNumber === 2) {
+          emitter.emit(SNACKBAR_TRANSACTION_CONFIRMED, receipt.transactionHash)
+          callback(null, receipt.transactionHash)
+        }
+      })
+      .on('error', function(error) {
+        if (!error.toString().includes("-32601")) {
+          if(error.message) {
+            emitter.emit(SNACKBAR_ERROR, error.message)
+            return callback(error.message)
+          }
+          emitter.emit(SNACKBAR_ERROR, error)
+          callback(error)
+        }
+      })
+      .catch((error) => {
+        if (!error.toString().includes("-32601")) {
+          if(error.message) {
+            emitter.emit(SNACKBAR_ERROR, error.message)
+            return callback(error.message)
+          }
+          emitter.emit(SNACKBAR_ERROR, error)
+          callback(error)
+        }
+      })
+  }
+
+  getInsuredBalances = async () => {
+    const account = store.getStore('account')
+    const assets = store.getStore('insuredAssets')
+
+    const web3 = this._getProvider()
+
+    async.map(assets, (asset, callback) => {
+      async.parallel([
+        (callbackInner) => { this._getERC20Balance(web3, asset, account, callbackInner) },
+        (callbackInner) => { this._getInsuredBalance(web3, asset, account, callbackInner) },
+      ], (err, data) => {
+        asset.balance = data[0]
+        asset.insuredBalance = data[1]
+
+        callback(null, asset)
+      })
+    }, (err, assets) => {
+      if(err) {
+        return emitter.emit(ERROR, err)
+      }
+
+      store.setStore({ assets: assets })
+      emitter.emit(INSURED_BALANCES_RETURNED, assets)
+    })
+  }
+
+  _getInsuredBalance = async (web3, asset, account, callback) => {
+    try {
+      const vaultContract = new web3.eth.Contract(asset.insuranceContractABI, asset.insuranceContractAddress)
+
+      let balance = await vaultContract.methods.balanceOf(account.address).call({ from: account.address });
+      balance = parseFloat(balance)/10**asset.decimals
+      callback(null, parseFloat(balance))
+    } catch(ex) {
+      console.log(ex)
+      return callback(ex)
+    }
+  }
+
+
+  depositInsured = (payload) => {
+    const account = store.getStore('account')
+    const { asset, amount } = payload.content
+
+    this._checkApproval(asset, account, amount, asset.insuranceContractAddress, (err) => {
+      if(err) {
+        return emitter.emit(ERROR, err);
+      }
+
+      this._callDepositInsured(asset, account, amount, (err, depositResult) => {
+        if(err) {
+          return emitter.emit(ERROR, err);
+        }
+
+        return emitter.emit(DEPOSIT_INSURED_RETURNED, depositResult)
+      })
+    })
+  }
+
+  _callDepositInsured = async (asset, account, amount, callback) => {
+    const web3 = this._getProvider()
+
+    const insuranceContract = new web3.eth.Contract(asset.insuranceContractABI, asset.insuranceContractAddress)
+
+    var amountToSend = web3.utils.toWei(amount, "ether")
+    if (asset.decimals !== 18) {
+      amountToSend = (amount*10**asset.decimals).toFixed(0);
+    }
+
+    insuranceContract.methods.deposit(amountToSend).send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
+      .on('transactionHash', function(hash){
+        emitter.emit(SNACKBAR_TRANSACTION_RECEIPT, hash)
+        callback(null, hash)
+      })
+      .on('confirmation', function(confirmationNumber, receipt){
+        if(confirmationNumber === 2) {
+          emitter.emit(SNACKBAR_TRANSACTION_CONFIRMED, receipt.transactionHash)
+          callback(null, receipt.transactionHash)
+        }
+      })
+      .on('error', function(error) {
+        if (!error.toString().includes("-32601")) {
+          if(error.message) {
+            emitter.emit(SNACKBAR_ERROR, error.message)
+            return callback(error.message)
+          }
+          emitter.emit(SNACKBAR_ERROR, error)
+          callback(error)
+        }
+      })
+      .catch((error) => {
+        if (!error.toString().includes("-32601")) {
+          if(error.message) {
+            emitter.emit(SNACKBAR_ERROR, error.message)
+            return callback(error.message)
+          }
+          emitter.emit(SNACKBAR_ERROR, error)
+          callback(error)
+        }
+      })
+  }
+
+  depositAllInsured = (payload) => {
+    const account = store.getStore('account')
+    const { asset } = payload.content
+
+    this._checkApproval(asset, account, asset.balance, asset.insuranceContractAddress, (err) => {
+      if(err) {
+        return emitter.emit(ERROR, err);
+      }
+
+      this._callDepositAllInsured(asset, account, (err, depositResult) => {
+        if(err) {
+          return emitter.emit(ERROR, err);
+        }
+
+        return emitter.emit(DEPOSIT_ALL_INSURED_RETURNED, depositResult)
+      })
+    })
+  }
+
+  _callDepositAllInsured = async (asset, account, callback) => {
+    const web3 = this._getProvider()
+
+    const insuranceContract = new web3.eth.Contract(asset.insuranceContractABI, asset.insuranceContractAddress)
+
+    insuranceContract.methods.depositAll().send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
+      .on('transactionHash', function(hash){
+        emitter.emit(SNACKBAR_TRANSACTION_RECEIPT, hash)
+        callback(null, hash)
+      })
+      .on('confirmation', function(confirmationNumber, receipt){
+        if(confirmationNumber === 2) {
+          emitter.emit(SNACKBAR_TRANSACTION_CONFIRMED, receipt.transactionHash)
+          callback(null, receipt.transactionHash)
+        }
+      })
+      .on('error', function(error) {
+        if (!error.toString().includes("-32601")) {
+          if(error.message) {
+            emitter.emit(SNACKBAR_ERROR, error.message)
+            return callback(error.message)
+          }
+          emitter.emit(SNACKBAR_ERROR, error)
+          callback(error)
+        }
+      })
+      .catch((error) => {
+        if (!error.toString().includes("-32601")) {
+          if(error.message) {
+            emitter.emit(SNACKBAR_ERROR, error.message)
+            return callback(error.message)
+          }
+          emitter.emit(SNACKBAR_ERROR, error)
+          callback(error)
+        }
+      })
+  }
+
+  withdrawInsured = (payload) => {
+    const account = store.getStore('account')
+    const { asset, amount } = payload.content
+
+    this._callWithdrawInsured(asset, account, amount, (err, withdrawResult) => {
+      if(err) {
+        return emitter.emit(ERROR, err);
+      }
+      return emitter.emit(WITHDRAW_INSURED_RETURNED, withdrawResult)
+    })
+  }
+
+  _callWithdrawInsured = async (asset, account, amount, callback) => {
+    const web3 = this._getProvider()
+
+    const insuranceContract = new web3.eth.Contract(asset.insuranceContractABI, asset.insuranceContractAddress)
+
+    var amountSend = web3.utils.toWei(amount, "ether")
+    if (asset.decimals !== 18) {
+      amountSend = amount*10**asset.decimals;
+    }
+
+    insuranceContract.methods.withdraw(amountSend).send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
+      .on('transactionHash', function(hash){
+        emitter.emit(SNACKBAR_TRANSACTION_RECEIPT, hash)
+        callback(null, hash)
+      })
+      .on('confirmation', function(confirmationNumber, receipt){
+        if(confirmationNumber === 2) {
+          emitter.emit(SNACKBAR_TRANSACTION_CONFIRMED, receipt.transactionHash)
+          callback(null, receipt.transactionHash)
+        }
+      })
+      .on('error', function(error) {
+        if (!error.toString().includes("-32601")) {
+          if(error.message) {
+            emitter.emit(SNACKBAR_ERROR, error.message)
+            return callback(error.message)
+          }
+          emitter.emit(SNACKBAR_ERROR, error)
+          callback(error)
+        }
+      })
+      .catch((error) => {
+        if (!error.toString().includes("-32601")) {
+          if(error.message) {
+            emitter.emit(SNACKBAR_ERROR, error.message)
+            return callback(error.message)
+          }
+          emitter.emit(SNACKBAR_ERROR, error)
+          callback(error)
+        }
+      })
+  }
+
+  withdrawAllInsured = (payload) => {
+    const account = store.getStore('account')
+    const { asset } = payload.content
+
+    this._callWithdrawAllInsured(asset, account, (err, withdrawResult) => {
+      if(err) {
+        return emitter.emit(ERROR, err);
+      }
+      return emitter.emit(WITHDRAW_ALL_INSURED_RETURNED, withdrawResult)
+    })
+  }
+
+  _callWithdrawAllInsured = async (asset, account, callback) => {
+    const web3 = this._getProvider()
+
+    const insuranceContract = new web3.eth.Contract(asset.insuranceContractABI, asset.insuranceContractAddress)
+
+    insuranceContract.methods.withdrawAll().send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
       .on('transactionHash', function(hash){
         emitter.emit(SNACKBAR_TRANSACTION_RECEIPT, hash)
         callback(null, hash)

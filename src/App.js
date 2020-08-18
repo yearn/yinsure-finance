@@ -15,6 +15,7 @@ import Account from './components/account';
 import AccountHeader from './components/accountHeader';
 import SnackbarController from './components/snackbar';
 import LP from './components/lp';
+import Insure from './components/insure';
 
 import { injected } from "./stores/connectors";
 
@@ -67,7 +68,6 @@ class App extends Component {
   };
 
   balancesReturned = () => {
-    console.log("BALANCES_RETURNED")
     window.setTimeout(() => {
       dispatcher.dispatch({ type: GET_BALANCES_PERPETUAL, content: {} })
     }, 60000)
@@ -117,6 +117,11 @@ class App extends Component {
                   <Header setHeaderValue={ this.setHeaderValue } headerValue={ headerValue } />
                   <AccountHeader />
                   <LP />
+                </Route>
+                <Route path="/insure">
+                  <Header setHeaderValue={ this.setHeaderValue } headerValue={ headerValue } />
+                  <AccountHeader />
+                  <Insure />
                 </Route>
                 <Route path="/">
                   <Home />

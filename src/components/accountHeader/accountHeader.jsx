@@ -10,8 +10,6 @@ import { colors } from '../../theme'
 import UnlockModal from '../unlock/unlockModal.jsx'
 
 import Store from "../../stores";
-const emitter = Store.emitter
-const dispatcher = Store.dispatcher
 const store = Store.store
 
 const styles = theme => ({
