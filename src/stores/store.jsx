@@ -91,6 +91,21 @@ class Store {
       ],
       contracts: [
         {
+          id: "AAVE",
+          name: 'Aave',
+          address: '0xc1D2819CE78f3E15Ee69c6738eB1B400A26e632A',
+          symbol: 'LEND',
+          logo: 'LEND-logo.png',
+          description: '',
+          decimals: 18,
+          balance: 0,
+          capacity: {
+            capacityETH: 0,
+            capacityDAI: 0,
+            netStakedNXM: 0
+          }
+        },
+        {
           id: "bal",
           name: 'Balancer',
           address: '0x9424B1412450D0f8Fc2255FAf6046b98213B76Bd',
