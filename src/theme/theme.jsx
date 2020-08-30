@@ -155,6 +155,18 @@ const iswapTheme =  {
         WebkitFontSmoothing: "antialiased",
         MozOsxFontSmoothing: "grayscale",
         lineHeight: 1.2
+      },
+    },
+    MuiInput: {
+      underline: {
+        '&:before': { //underline color when textfield is inactive
+          height: '0px',
+          borderBottom: 'none !important'
+        },
+        '&:hover:not($disabled):before': { //underline color when hovered
+          height: '0px',
+          borderBottom: 'none !important'
+        },
       }
     },
     MuiOutlinedInput: {
@@ -275,7 +287,12 @@ const iswapTheme =  {
     },
     MuiFormControlLabel: {
       label: {
-        color: colors.darkBlack
+        color: colors.darkBlack,
+        fontSize: '14px',
+        fontWeight: '600',
+        WebkitFontSmoothing: "antialiased",
+        MozOsxFontSmoothing: "grayscale",
+        lineHeight: 1.2
       }
     }
   },

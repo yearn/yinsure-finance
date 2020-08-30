@@ -9,36 +9,27 @@ import IpfsRouter from 'ipfs-react-router'
 
 import yearnTheme from './theme';
 
-import Home from './components/home';
 import Header from './components/header';
 import Account from './components/account';
-import AccountHeader from './components/accountHeader';
+import Disclaimer from './components/disclaimer';
 import SnackbarController from './components/snackbar';
-import LP from './components/lp';
-import Insure from './components/insure';
+import Dashboard from './components/dashboard';
+import AddCover from './components/addCover';
 
 import { injected } from "./stores/connectors";
 
 import {
   CONNECTION_CONNECTED,
-  CONNECTION_DISCONNECTED,
-  GET_BALANCES_PERPETUAL,
-  BALANCES_PERPETUAL_RETURNED
+  CONNECTION_DISCONNECTED
 } from './constants'
 
 import Store from "./stores";
 const emitter = Store.emitter
-const dispatcher = Store.dispatcher
 const store = Store.store
 
 class App extends Component {
   state = {
     account: null,
-    headerValue: 'lp'
-  };
-
-  setHeaderValue = (newValue) => {
-    this.setState({ headerValue: newValue })
   };
 
   componentWillMount() {
@@ -67,25 +58,16 @@ class App extends Component {
     emitter.removeListener(CONNECTION_DISCONNECTED, this.connectionDisconnected);
   };
 
-  balancesReturned = () => {
-    window.setTimeout(() => {
-      dispatcher.dispatch({ type: GET_BALANCES_PERPETUAL, content: {} })
-    }, 60000)
-  }
-
   connectionConnected = () => {
     this.setState({ account: store.getStore('account') })
-    emitter.on(BALANCES_PERPETUAL_RETURNED, this.balancesReturned);
-    dispatcher.dispatch({ type: GET_BALANCES_PERPETUAL, content: {} })
   };
 
   connectionDisconnected = () => {
-    emitter.removeListener(BALANCES_PERPETUAL_RETURNED, this.balancesReturned);
     this.setState({ account: store.getStore('account') })
   }
 
   render() {
-    const { headerValue, account } = this.state
+    const { account } = this.state
 
     return (
       <MuiThemeProvider theme={ createMuiTheme(yearnTheme) }>
@@ -112,19 +94,17 @@ class App extends Component {
               alignItems: 'center',
               background: "#f9fafb"
             }}>
+              <Header />
+              <Disclaimer />
               <Switch>
-                <Route path="/lp">
-                  <Header setHeaderValue={ this.setHeaderValue } headerValue={ headerValue } />
-                  <AccountHeader />
-                  <LP />
+                <Route path="/add">
+                  <AddCover />
                 </Route>
-                <Route path="/insure">
-                  <Header setHeaderValue={ this.setHeaderValue } headerValue={ headerValue } />
-                  <AccountHeader />
-                  <Insure />
+                <Route path="/dashboard">
+                  <Dashboard />
                 </Route>
                 <Route path="/">
-                  <Home />
+                  <Dashboard />
                 </Route>
               </Switch>
             </div>

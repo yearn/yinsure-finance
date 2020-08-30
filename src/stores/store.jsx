@@ -5,28 +5,14 @@ import {
   SNACKBAR_TRANSACTION_RECEIPT,
   SNACKBAR_TRANSACTION_CONFIRMED,
   ERROR,
-  GET_BALANCES_PERPETUAL,
-  BALANCES_PERPETUAL_RETURNED,
-  GET_LP_BALANCES,
-  LP_BALANCES_RETURNED,
-  DEPOSIT_LP,
-  DEPOSIT_LP_RETURNED,
-  DEPOSIT_ALL_LP,
-  DEPOSIT_ALL_LP_RETURNED,
-  WITHDRAW_LP,
-  WITHDRAW_LP_RETURNED,
-  WITHDRAW_ALL_LP,
-  WITHDRAW_ALL_LP_RETURNED,
-  GET_INSURED_BALANCES,
-  INSURED_BALANCES_RETURNED,
-  DEPOSIT_INSURED,
-  DEPOSIT_INSURED_RETURNED,
-  DEPOSIT_ALL_INSURED,
-  DEPOSIT_ALL_INSURED_RETURNED,
-  WITHDRAW_INSURED,
-  WITHDRAW_INSURED_RETURNED,
-  WITHDRAW_ALL_INSURED,
-  WITHDRAW_ALL_INSURED_RETURNED,
+  GET_ACCOUNT_BALANCES,
+  ACCOUNT_BALANCES_RETURNED,
+  GET_CONTRACT_BALANCES,
+  CONTRACT_BALANCES_RETURNED,
+  GET_QUOTE,
+  QUOTE_RETURNED,
+  APPLY,
+  APPLY_RETURNED,
 } from '../constants';
 import Web3 from 'web3';
 
@@ -74,73 +60,121 @@ class Store {
       },
       web3context: null,
       ethBalance: 0,
-      lpAssets: [
+      balances: [
         {
-          id: 'USDC',
-          name: 'USD Coin',
-          symbol: 'USDC',
-          description: 'USD//C',
-          vaultSymbol: 'yiUSDC',
-          erc20address: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
-          vaultContractAddress: config.LPVaultContractAddress,
-          vaultContractABI: config.LPVaultContractABI,
-          balance: 0,
-          vaultBalance: 0,
-          decimals: 6,
-        }
-      ],
-      insuredAssets: [
-        {
-          id: 'yUSD',
-          name: 'Wrapped yCRV',
-          symbol: 'yUSD',
-          description: 'Wrapped yCRV',
-          insuredSymbol: 'iyUSD',
-          erc20address: '0x5dbcF33D8c2E976c6b560249878e6F1491Bca25c',
-          insuranceContractAddress: config.InsuredVaultContractAddress,
-          insuranceContractABI: config.InsuredVaultContractABI,
-          balance: 0,
-          insuredBalance: 0,
+          id: "eth",
+          name: "Ether",
+          address: "Ethereum",
+          symbol: "ETH",
+          logo: "ETH-logo.png",
+          description: 'Ethereum',
           decimals: 18,
+          balance: 0
+        },
+        {
+          id: "dai",
+          name: "DAI",
+          address: "0x6b175474e89094c44da98b954eedeac495271d0f",
+          symbol: "DAI",
+          logo: "DAI-logo.png",
+          description: 'DAI Stablecoin',
+          decimals: 18,
+          balance: 0
         }
       ],
+      contracts: [
+        {
+          id: "bal",
+          name: 'Balancer',
+          address: '0x9424B1412450D0f8Fc2255FAf6046b98213B76Bd',
+          symbol: 'BAL',
+          logo: 'BAL-logo.png',
+          description: '',
+          decimals: 18,
+          balance: 0,
+          capacity: {
+            capacityETH: 0,
+            capacityDAI: 0,
+            netStakedNXM: 0
+          }
+        },
+        {
+          id: "comp",
+          name: 'Compound',
+          address: '0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B',
+          symbol: 'COMP',
+          logo: 'COMP-logo.png',
+          description: '',
+          decimals: 18,
+          balance: 0,
+          capacity: {
+            capacityETH: 0,
+            capacityDAI: 0,
+            netStakedNXM: 0
+          }
+        },
+        {
+          id: "crv",
+          name: 'Curve',
+          address: '0x79a8C46DeA5aDa233ABaFFD40F3A0A2B1e5A4F27',
+          symbol: 'CRV',
+          logo: 'CRV-logo.png',
+          description: '',
+          decimals: 18,
+          balance: 0,
+          capacity: {
+            capacityETH: 0,
+            capacityDAI: 0,
+            netStakedNXM: 0
+          }
+        },
+        {
+          id: "snx",
+          name: 'SynthetiX',
+          address: '0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F',
+          symbol: 'SNX',
+          logo: 'SNX-logo.png',
+          description: '',
+          decimals: 18,
+          balance: 0,
+          capacity: {
+            capacityETH: 0,
+            capacityDAI: 0,
+            netStakedNXM: 0
+          }
+        },
+        {
+          id: "yfi",
+          name: 'yearn.finance',
+          address: '0x9D25057e62939D3408406975aD75Ffe834DA4cDd',
+          symbol: 'YFI',
+          logo: 'YFI-logo.png',
+          description: '',
+          decimals: 18,
+          balance: 0,
+          capacity: {
+            capacityETH: 0,
+            capacityDAI: 0,
+            netStakedNXM: 0
+          }
+        }
+      ]
     }
 
     dispatcher.register(
       function (payload) {
         switch (payload.type) {
-          case GET_BALANCES_PERPETUAL:
-            this.getBalancesPerpetual(payload);
+          case GET_ACCOUNT_BALANCES:
+            this.getAccountBalances(payload);
             break;
-          case GET_LP_BALANCES:
-            this.getLPBalances(payload);
+          case GET_CONTRACT_BALANCES:
+            this.getContractBalances(payload);
             break;
-          case DEPOSIT_LP:
-            this.depositLP(payload)
+          case GET_QUOTE:
+            this.getQuote(payload);
             break;
-          case DEPOSIT_ALL_LP:
-            this.depositAllLP(payload)
-            break;
-          case WITHDRAW_LP:
-            this.withdrawLP(payload)
-            break;
-          case WITHDRAW_ALL_LP:
-            this.withdrawAllLP(payload)
-            break;
-          case GET_INSURED_BALANCES:
-            this.getInsuredBalances(payload);
-            break;
-          case DEPOSIT_INSURED:
-            this.depositInsured(payload)
-            break;
-          case DEPOSIT_ALL_INSURED:
-            this.depositAllInsured(payload)
-            break;
-          case WITHDRAW_INSURED:
-            this.withdrawInsured(payload)
-            break;
-          case WITHDRAW_ALL_INSURED:
-            this.withdrawAllInsured(payload)
+          case APPLY:
+            this.apply(payload);
             break;
           default: {
           }
@@ -158,6 +192,208 @@ class Store {
     // console.log(this.store)
     return emitter.emit('StoreUpdated');
   };
+
+  getAccountBalances = async (payload) => {
+    const account = store.getStore('account')
+    const balances = store.getStore('balances')
+
+    if(!account || !account.address) {
+      return false
+    }
+
+    const web3 = await this._getProvider();
+
+    async.map(balances, (balance, callback) => {
+      async.parallel([
+        (callbackInner) => { this._getERC20Balance(web3, balance, account, callbackInner) },
+      ], (err, data) => {
+        balance.balance = data[0]
+
+        callback(null, balance)
+      })
+    }, (err, balanceData) => {
+      if(err) {
+        emitter.emit(ERROR, err)
+        emitter.emit(SNACKBAR_ERROR, err)
+        return
+      }
+
+      store.setStore({ balances: balanceData })
+      emitter.emit(ACCOUNT_BALANCES_RETURNED)
+    })
+  }
+
+  getContractBalances = async (payload) => {
+    const account = store.getStore('account')
+    const contracts = store.getStore('contracts')
+
+    if(!account || !account.address) {
+      return false
+    }
+
+    const web3 = await this._getProvider();
+
+    async.map(contracts, (contract, callback) => {
+      async.parallel([
+        // (callbackInner) => { this._getERC20Balance(web3, contract, account, callbackInner) },
+        (callbackInner) => { this._getContractCapacity(contract, callbackInner) },
+      ], (err, data) => {
+        // contract.balance = data[0]
+        contract.capacity = data[0]
+
+        callback(null, contract)
+      })
+    }, (err, contractData) => {
+      if(err) {
+        emitter.emit(ERROR)
+        emitter.emit(SNACKBAR_ERROR)
+        return
+      }
+
+      console.log(contractData)
+
+      store.setStore({ contracts: contractData })
+      emitter.emit(CONTRACT_BALANCES_RETURNED)
+    })
+  }
+
+  _getERC20Balance = async (web3, contract, account, callback) => {
+    try {
+      if(contract.address === 'Ethereum') {
+        const eth_balance = web3.utils.fromWei(await web3.eth.getBalance(account.address), "ether");
+        callback(null, parseFloat(eth_balance))
+      } else {
+        const erc20Contract = new web3.eth.Contract(config.erc20ABI, contract.address)
+        let balance = await erc20Contract.methods.balanceOf(account.address).call({ from: account.address });
+        balance = parseFloat(balance)/10**contract.decimals
+        callback(null, parseFloat(balance))
+      }
+    } catch(ex) {
+      return callback(ex)
+    }
+  }
+
+  _getContractCapacity = async (contract, callback) => {
+    try {
+      const url = config.nexusMutualAPI+`v1/contracts/${contract.address}/capacity`
+
+      const options = {
+        uri: url,
+        headers: {
+          'x-api-key': config.nexusMutualKey
+        },
+        json: true
+      }
+
+      const capacityJSON = await rp(options);
+      callback(null, capacityJSON)
+    } catch(e) {
+      console.log(e)
+      if(e && e.error && e.error.reason === "Uncoverable") {
+        return callback(null, {
+          capacityETH: 0,
+          capacityDAI: 0,
+          netStakedNXM: 0
+        })
+      }
+      return callback(null, {})
+    }
+  }
+
+  getQuote = async (payload) => {
+
+    const { amount, days, contract, asset } = payload.content
+
+    this._getQuote(amount, days, contract, asset, (err, data) => {
+      if(err) {
+        emitter.emit(ERROR, err)
+        emitter.emit(SNACKBAR_ERROR, err)
+        return
+      }
+
+      emitter.emit(QUOTE_RETURNED, data)
+    })
+  }
+
+  _getQuote = async (amount, days, contract, asset, callback) => {
+    try {
+      const url = config.nexusMutualAPI+`v1/quote?coverAmount=${amount}&currency=${asset.symbol}&period=${days}&contractAddress=${contract.address}`
+      // const url = config.nexusMutualAPI+`getQuote/${amount}/${asset.symbol}/${days}/${contract.address}/M1`
+
+      const options = {
+        uri: url,
+        headers: {
+          'x-api-key': config.nexusMutualKey
+        },
+        json: true
+      }
+
+      const quoteJSON = await rp(options);
+      callback(null, quoteJSON)
+    } catch(e) {
+      console.log(e)
+      return callback(e)
+    }
+  }
+
+  apply = async (payload) => {
+
+    const account = store.getStore('account')
+    const { amount, days, contract, asset, quote } = payload.content
+
+    console.log(quote)
+
+    this._callApply(amount, days, contract, asset, account, quote, (err, data) => {
+      if(err) {
+        emitter.emit(ERROR, err)
+        emitter.emit(SNACKBAR_ERROR, err)
+        return
+      }
+
+      emitter.emit(APPLY_RETURNED, data)
+    })
+  }
+
+  _callApply = async (amount, days, contract, asset, account, quote, callback) => {
+    const web3 = this._getProvider()
+
+    let insuranceContract = new web3.eth.Contract(config.yInsureABI, config.yInsureAddress)
+
+    const coverDetails = [amount, quote.price, quote.priceInNXM, quote.expiresAt, quote.generatedAt]
+
+    const sendSymbol = web3.utils.asciiToHex(asset.symbol)
+
+    console.log(contract.address)
+    console.log(sendSymbol)
+    console.log(coverDetails)
+    console.log(days)
+    console.log(quote.v)
+    console.log(quote.r)
+    console.log(quote.s)
+    console.log(quote.price)
+    console.log(account.address)
+
+    insuranceContract.methods.buyCover(contract.address, sendSymbol, coverDetails, days, quote.v, quote.r, quote.s).send({ from: account.address, value: quote.price, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
+    .on('transactionHash', function(hash){
+      callback(null, hash)
+    })
+    .on('confirmation', function(confirmationNumber, receipt){
+      if(confirmationNumber === 2) {
+        emitter.emit(SNACKBAR_TRANSACTION_CONFIRMED, receipt.transactionHash)
+      }
+    })
+    .on('receipt', function(receipt){
+      emitter.emit(SNACKBAR_TRANSACTION_RECEIPT, receipt.transactionHash)
+    })
+    .on('error', function(error) {
+      if (!error.toString().includes("-32601")) {
+        if(error.message) {
+          return callback(error.message)
+        }
+        callback(error)
+      }
+    })
+  }
 
   _checkApproval = async (asset, account, amount, contract, callback) => {
     try {
@@ -189,617 +425,9 @@ class Store {
     }
   }
 
-  getBalancesPerpetual = async () => {
-    const account = store.getStore('account')
-    const lpAssets = store.getStore('lpAssets')
-    const insuredAssets = store.getStore('insuredAssets')
-
-    const web3 = this._getProvider()
-
-    async.parallel([
-      (callback) => { this._getLPBalancesPerpetual(web3, lpAssets, account, callback) },
-      (callback) => { this._getInsuredBalancesPerpetual(web3, insuredAssets, account, callback) },
-    ], (err, assets) => {
-      if(err) {
-        return emitter.emit(ERROR, err)
-      }
-
-      store.setStore({ lpAssets: assets[0], insuredAssets: assets[1] })
-
-      emitter.emit(BALANCES_PERPETUAL_RETURNED, assets)
-      emitter.emit(LP_BALANCES_RETURNED, assets[0])
-      emitter.emit(INSURED_BALANCES_RETURNED, assets[1])
-    })
-  }
-
-  _getInsuredBalancesPerpetual= (web3, assets, account, cb) => {
-    async.map(assets, (asset, callback) => {
-      async.parallel([
-        (callbackInner) => { this._getERC20Balance(web3, asset, account, callbackInner) },
-        (callbackInner) => { this._getInsuredBalance(web3, asset, account, callbackInner) },
-      ], (err, data) => {
-        asset.balance = data[0]
-        asset.insuredBalance = data[1]
-
-        callback(null, asset)
-      })
-    }, cb)
-  }
-
-  _getLPBalancesPerpetual = (web3, assets, account, cb) => {
-    async.map(assets, (asset, callback) => {
-      async.parallel([
-        (callbackInner) => { this._getERC20Balance(web3, asset, account, callbackInner) },
-        (callbackInner) => { this._getVaultBalance(web3, asset, account, callbackInner) },
-        (callbackInner) => { this._getVaultPricePerFullShare(web3, asset, account, callbackInner) },
-      ], (err, data) => {
-        asset.balance = data[0]
-        asset.vaultBalance = data[1]
-        asset.pricePerFullShare = data[2]
-
-        callback(null, asset)
-      })
-    }, cb)
-  }
-
-  getLPBalances = async () => {
-    const account = store.getStore('account')
-    const assets = store.getStore('lpAssets')
-
-    const web3 = this._getProvider()
-
-    async.map(assets, (asset, callback) => {
-      async.parallel([
-        (callbackInner) => { this._getERC20Balance(web3, asset, account, callbackInner) },
-        (callbackInner) => { this._getVaultBalance(web3, asset, account, callbackInner) },
-        (callbackInner) => { this._getVaultPricePerFullShare(web3, asset, account, callbackInner) },
-      ], (err, data) => {
-        asset.balance = data[0]
-        asset.vaultBalance = data[1]
-        asset.pricePerFullShare = data[2]
-
-        callback(null, asset)
-      })
-    }, (err, assets) => {
-      if(err) {
-        return emitter.emit(ERROR, err)
-      }
-
-      store.setStore({ assets: assets })
-      emitter.emit(LP_BALANCES_RETURNED, assets)
-    })
-  }
-
-  _getERC20Balance = async (web3, asset, account, callback) => {
-    try {
-      const erc20Contract = new web3.eth.Contract(config.erc20ABI, asset.erc20address)
-
-      let balance = await erc20Contract.methods.balanceOf(account.address).call({ from: account.address });
-      balance = parseFloat(balance)/10**asset.decimals
-      callback(null, parseFloat(balance))
-    } catch(ex) {
-      console.log(ex)
-      return callback(ex)
-    }
-  }
-
-  _getVaultBalance = async (web3, asset, account, callback) => {
-    try {
-      const vaultContract = new web3.eth.Contract(asset.vaultContractABI, asset.vaultContractAddress)
-
-      let balance = await vaultContract.methods.balanceOf(account.address).call({ from: account.address });
-      balance = parseFloat(balance)/10**asset.decimals
-      callback(null, parseFloat(balance))
-    } catch(ex) {
-      console.log(ex)
-      return callback(ex)
-    }
-  }
-
-  _getVaultPricePerFullShare = async (web3, asset, account, callback) => {
-    try {
-      const vaultContract = new web3.eth.Contract(asset.vaultContractABI, asset.vaultContractAddress)
-
-      let price = await vaultContract.methods.getPricePerFullShare().call({ from: account.address });
-      price = parseFloat(price)/10**18
-      callback(null, parseFloat(price))
-    } catch(ex) {
-      console.log(ex)
-      return callback(ex)
-    }
-  }
-
-  depositLP = (payload) => {
-    const account = store.getStore('account')
-    const { asset, amount } = payload.content
-
-    this._checkApproval(asset, account, amount, asset.vaultContractAddress, (err) => {
-      if(err) {
-        return emitter.emit(ERROR, err);
-      }
-
-      this._callDepositLP(asset, account, amount, (err, depositResult) => {
-        if(err) {
-          return emitter.emit(ERROR, err);
-        }
-
-        return emitter.emit(DEPOSIT_LP_RETURNED, depositResult)
-      })
-    })
-  }
-
-  _callDepositLP = async (asset, account, amount, callback) => {
-    const web3 = this._getProvider()
-
-    const vaultContract = new web3.eth.Contract(asset.vaultContractABI, asset.vaultContractAddress)
-
-    var amountToSend = web3.utils.toWei(amount, "ether")
-    if (asset.decimals !== 18) {
-      amountToSend = (amount*10**asset.decimals).toFixed(0);
-    }
-
-    vaultContract.methods.deposit(amountToSend).send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
-      .on('transactionHash', function(hash){
-        emitter.emit(SNACKBAR_TRANSACTION_RECEIPT, hash)
-        callback(null, hash)
-      })
-      .on('confirmation', function(confirmationNumber, receipt){
-        if(confirmationNumber === 2) {
-          emitter.emit(SNACKBAR_TRANSACTION_CONFIRMED, receipt.transactionHash)
-          callback(null, receipt.transactionHash)
-        }
-      })
-      .on('error', function(error) {
-        if (!error.toString().includes("-32601")) {
-          if(error.message) {
-            emitter.emit(SNACKBAR_ERROR, error.message)
-            return callback(error.message)
-          }
-          emitter.emit(SNACKBAR_ERROR, error)
-          callback(error)
-        }
-      })
-      .catch((error) => {
-        if (!error.toString().includes("-32601")) {
-          if(error.message) {
-            emitter.emit(SNACKBAR_ERROR, error.message)
-            return callback(error.message)
-          }
-          emitter.emit(SNACKBAR_ERROR, error)
-          callback(error)
-        }
-      })
-  }
-
-  depositAllLP = (payload) => {
-    const account = store.getStore('account')
-    const { asset } = payload.content
-
-    this._checkApproval(asset, account, asset.balance, asset.vaultContractAddress, (err) => {
-      if(err) {
-        return emitter.emit(ERROR, err);
-      }
-
-      this._callDepositAllLP(asset, account, (err, depositResult) => {
-        if(err) {
-          return emitter.emit(ERROR, err);
-        }
-
-        return emitter.emit(DEPOSIT_ALL_LP_RETURNED, depositResult)
-      })
-    })
-  }
-
-  _callDepositAllLP = async (asset, account, callback) => {
-    const web3 = this._getProvider()
-
-    const vaultContract = new web3.eth.Contract(asset.vaultContractABI, asset.vaultContractAddress)
-
-    vaultContract.methods.depositAll().send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
-      .on('transactionHash', function(hash){
-        emitter.emit(SNACKBAR_TRANSACTION_RECEIPT, hash)
-        callback(null, hash)
-      })
-      .on('confirmation', function(confirmationNumber, receipt){
-        if(confirmationNumber === 2) {
-          emitter.emit(SNACKBAR_TRANSACTION_CONFIRMED, receipt.transactionHash)
-          callback(null, receipt.transactionHash)
-        }
-      })
-      .on('error', function(error) {
-        if (!error.toString().includes("-32601")) {
-          if(error.message) {
-            emitter.emit(SNACKBAR_ERROR, error.message)
-            return callback(error.message)
-          }
-          emitter.emit(SNACKBAR_ERROR, error)
-          callback(error)
-        }
-      })
-      .catch((error) => {
-        if (!error.toString().includes("-32601")) {
-          if(error.message) {
-            emitter.emit(SNACKBAR_ERROR, error.message)
-            return callback(error.message)
-          }
-          emitter.emit(SNACKBAR_ERROR, error)
-          callback(error)
-        }
-      })
-  }
-
-  withdrawLP = (payload) => {
-    const account = store.getStore('account')
-    const { asset, amount } = payload.content
-
-    this._callWithdrawLP(asset, account, amount, (err, withdrawResult) => {
-      if(err) {
-        return emitter.emit(ERROR, err);
-      }
-      return emitter.emit(WITHDRAW_LP_RETURNED, withdrawResult)
-    })
-  }
-
-  _callWithdrawLP = async (asset, account, amount, callback) => {
-    const web3 = this._getProvider()
-
-    const vaultContract = new web3.eth.Contract(asset.vaultContractABI, asset.vaultContractAddress)
-
-    var amountSend = web3.utils.toWei(amount, "ether")
-    if (asset.decimals !== 18) {
-      amountSend = amount*10**asset.decimals;
-    }
-
-    vaultContract.methods.withdraw(amountSend).send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
-      .on('transactionHash', function(hash){
-        emitter.emit(SNACKBAR_TRANSACTION_RECEIPT, hash)
-        callback(null, hash)
-      })
-      .on('confirmation', function(confirmationNumber, receipt){
-        if(confirmationNumber === 2) {
-          emitter.emit(SNACKBAR_TRANSACTION_CONFIRMED, receipt.transactionHash)
-          callback(null, receipt.transactionHash)
-        }
-      })
-      .on('error', function(error) {
-        if (!error.toString().includes("-32601")) {
-          if(error.message) {
-            emitter.emit(SNACKBAR_ERROR, error.message)
-            return callback(error.message)
-          }
-          emitter.emit(SNACKBAR_ERROR, error)
-          callback(error)
-        }
-      })
-      .catch((error) => {
-        if (!error.toString().includes("-32601")) {
-          if(error.message) {
-            emitter.emit(SNACKBAR_ERROR, error.message)
-            return callback(error.message)
-          }
-          emitter.emit(SNACKBAR_ERROR, error)
-          callback(error)
-        }
-      })
-  }
-
-  withdrawAllLP = (payload) => {
-    const account = store.getStore('account')
-    const { asset } = payload.content
-
-    this._callWithdrawAllLP(asset, account, (err, withdrawResult) => {
-      if(err) {
-        return emitter.emit(ERROR, err);
-      }
-      return emitter.emit(WITHDRAW_ALL_LP_RETURNED, withdrawResult)
-    })
-  }
-
-  _callWithdrawAllLP = async (asset, account, callback) => {
-    const web3 = this._getProvider()
-
-    const vaultContract = new web3.eth.Contract(asset.vaultContractABI, asset.vaultContractAddress)
-
-    vaultContract.methods.withdrawAll().send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
-      .on('transactionHash', function(hash){
-        emitter.emit(SNACKBAR_TRANSACTION_RECEIPT, hash)
-        callback(null, hash)
-      })
-      .on('confirmation', function(confirmationNumber, receipt){
-        if(confirmationNumber === 2) {
-          emitter.emit(SNACKBAR_TRANSACTION_CONFIRMED, receipt.transactionHash)
-          callback(null, receipt.transactionHash)
-        }
-      })
-      .on('error', function(error) {
-        if (!error.toString().includes("-32601")) {
-          if(error.message) {
-            emitter.emit(SNACKBAR_ERROR, error.message)
-            return callback(error.message)
-          }
-          emitter.emit(SNACKBAR_ERROR, error)
-          callback(error)
-        }
-      })
-      .catch((error) => {
-        if (!error.toString().includes("-32601")) {
-          if(error.message) {
-            emitter.emit(SNACKBAR_ERROR, error.message)
-            return callback(error.message)
-          }
-          emitter.emit(SNACKBAR_ERROR, error)
-          callback(error)
-        }
-      })
-  }
-
-  getInsuredBalances = async () => {
-    const account = store.getStore('account')
-    const assets = store.getStore('insuredAssets')
-
-    const web3 = this._getProvider()
-
-    async.map(assets, (asset, callback) => {
-      async.parallel([
-        (callbackInner) => { this._getERC20Balance(web3, asset, account, callbackInner) },
-        (callbackInner) => { this._getInsuredBalance(web3, asset, account, callbackInner) },
-      ], (err, data) => {
-        asset.balance = data[0]
-        asset.insuredBalance = data[1]
-
-        callback(null, asset)
-      })
-    }, (err, assets) => {
-      if(err) {
-        return emitter.emit(ERROR, err)
-      }
-
-      store.setStore({ assets: assets })
-      emitter.emit(INSURED_BALANCES_RETURNED, assets)
-    })
-  }
-
-  _getInsuredBalance = async (web3, asset, account, callback) => {
-    try {
-      const vaultContract = new web3.eth.Contract(asset.insuranceContractABI, asset.insuranceContractAddress)
-
-      let balance = await vaultContract.methods.balanceOf(account.address).call({ from: account.address });
-      balance = parseFloat(balance)/10**asset.decimals
-      callback(null, parseFloat(balance))
-    } catch(ex) {
-      console.log(ex)
-      return callback(ex)
-    }
-  }
-
-
-  depositInsured = (payload) => {
-    const account = store.getStore('account')
-    const { asset, amount } = payload.content
-
-    this._checkApproval(asset, account, amount, asset.insuranceContractAddress, (err) => {
-      if(err) {
-        return emitter.emit(ERROR, err);
-      }
-
-      this._callDepositInsured(asset, account, amount, (err, depositResult) => {
-        if(err) {
-          return emitter.emit(ERROR, err);
-        }
-
-        return emitter.emit(DEPOSIT_INSURED_RETURNED, depositResult)
-      })
-    })
-  }
-
-  _callDepositInsured = async (asset, account, amount, callback) => {
-    const web3 = this._getProvider()
-
-    const insuranceContract = new web3.eth.Contract(asset.insuranceContractABI, asset.insuranceContractAddress)
-
-    var amountToSend = web3.utils.toWei(amount, "ether")
-    if (asset.decimals !== 18) {
-      amountToSend = (amount*10**asset.decimals).toFixed(0);
-    }
-
-    insuranceContract.methods.deposit(amountToSend).send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
-      .on('transactionHash', function(hash){
-        emitter.emit(SNACKBAR_TRANSACTION_RECEIPT, hash)
-        callback(null, hash)
-      })
-      .on('confirmation', function(confirmationNumber, receipt){
-        if(confirmationNumber === 2) {
-          emitter.emit(SNACKBAR_TRANSACTION_CONFIRMED, receipt.transactionHash)
-          callback(null, receipt.transactionHash)
-        }
-      })
-      .on('error', function(error) {
-        if (!error.toString().includes("-32601")) {
-          if(error.message) {
-            emitter.emit(SNACKBAR_ERROR, error.message)
-            return callback(error.message)
-          }
-          emitter.emit(SNACKBAR_ERROR, error)
-          callback(error)
-        }
-      })
-      .catch((error) => {
-        if (!error.toString().includes("-32601")) {
-          if(error.message) {
-            emitter.emit(SNACKBAR_ERROR, error.message)
-            return callback(error.message)
-          }
-          emitter.emit(SNACKBAR_ERROR, error)
-          callback(error)
-        }
-      })
-  }
-
-  depositAllInsured = (payload) => {
-    const account = store.getStore('account')
-    const { asset } = payload.content
-
-    this._checkApproval(asset, account, asset.balance, asset.insuranceContractAddress, (err) => {
-      if(err) {
-        return emitter.emit(ERROR, err);
-      }
-
-      this._callDepositAllInsured(asset, account, (err, depositResult) => {
-        if(err) {
-          return emitter.emit(ERROR, err);
-        }
-
-        return emitter.emit(DEPOSIT_ALL_INSURED_RETURNED, depositResult)
-      })
-    })
-  }
-
-  _callDepositAllInsured = async (asset, account, callback) => {
-    const web3 = this._getProvider()
-
-    const insuranceContract = new web3.eth.Contract(asset.insuranceContractABI, asset.insuranceContractAddress)
-
-    insuranceContract.methods.depositAll().send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
-      .on('transactionHash', function(hash){
-        emitter.emit(SNACKBAR_TRANSACTION_RECEIPT, hash)
-        callback(null, hash)
-      })
-      .on('confirmation', function(confirmationNumber, receipt){
-        if(confirmationNumber === 2) {
-          emitter.emit(SNACKBAR_TRANSACTION_CONFIRMED, receipt.transactionHash)
-          callback(null, receipt.transactionHash)
-        }
-      })
-      .on('error', function(error) {
-        if (!error.toString().includes("-32601")) {
-          if(error.message) {
-            emitter.emit(SNACKBAR_ERROR, error.message)
-            return callback(error.message)
-          }
-          emitter.emit(SNACKBAR_ERROR, error)
-          callback(error)
-        }
-      })
-      .catch((error) => {
-        if (!error.toString().includes("-32601")) {
-          if(error.message) {
-            emitter.emit(SNACKBAR_ERROR, error.message)
-            return callback(error.message)
-          }
-          emitter.emit(SNACKBAR_ERROR, error)
-          callback(error)
-        }
-      })
-  }
-
-  withdrawInsured = (payload) => {
-    const account = store.getStore('account')
-    const { asset, amount } = payload.content
-
-    this._callWithdrawInsured(asset, account, amount, (err, withdrawResult) => {
-      if(err) {
-        return emitter.emit(ERROR, err);
-      }
-      return emitter.emit(WITHDRAW_INSURED_RETURNED, withdrawResult)
-    })
-  }
-
-  _callWithdrawInsured = async (asset, account, amount, callback) => {
-    const web3 = this._getProvider()
-
-    const insuranceContract = new web3.eth.Contract(asset.insuranceContractABI, asset.insuranceContractAddress)
-
-    var amountSend = web3.utils.toWei(amount, "ether")
-    if (asset.decimals !== 18) {
-      amountSend = amount*10**asset.decimals;
-    }
-
-    insuranceContract.methods.withdraw(amountSend).send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
-      .on('transactionHash', function(hash){
-        emitter.emit(SNACKBAR_TRANSACTION_RECEIPT, hash)
-        callback(null, hash)
-      })
-      .on('confirmation', function(confirmationNumber, receipt){
-        if(confirmationNumber === 2) {
-          emitter.emit(SNACKBAR_TRANSACTION_CONFIRMED, receipt.transactionHash)
-          callback(null, receipt.transactionHash)
-        }
-      })
-      .on('error', function(error) {
-        if (!error.toString().includes("-32601")) {
-          if(error.message) {
-            emitter.emit(SNACKBAR_ERROR, error.message)
-            return callback(error.message)
-          }
-          emitter.emit(SNACKBAR_ERROR, error)
-          callback(error)
-        }
-      })
-      .catch((error) => {
-        if (!error.toString().includes("-32601")) {
-          if(error.message) {
-            emitter.emit(SNACKBAR_ERROR, error.message)
-            return callback(error.message)
-          }
-          emitter.emit(SNACKBAR_ERROR, error)
-          callback(error)
-        }
-      })
-  }
-
-  withdrawAllInsured = (payload) => {
-    const account = store.getStore('account')
-    const { asset } = payload.content
-
-    this._callWithdrawAllInsured(asset, account, (err, withdrawResult) => {
-      if(err) {
-        return emitter.emit(ERROR, err);
-      }
-      return emitter.emit(WITHDRAW_ALL_INSURED_RETURNED, withdrawResult)
-    })
-  }
-
-  _callWithdrawAllInsured = async (asset, account, callback) => {
-    const web3 = this._getProvider()
-
-    const insuranceContract = new web3.eth.Contract(asset.insuranceContractABI, asset.insuranceContractAddress)
-
-    insuranceContract.methods.withdrawAll().send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
-      .on('transactionHash', function(hash){
-        emitter.emit(SNACKBAR_TRANSACTION_RECEIPT, hash)
-        callback(null, hash)
-      })
-      .on('confirmation', function(confirmationNumber, receipt){
-        if(confirmationNumber === 2) {
-          emitter.emit(SNACKBAR_TRANSACTION_CONFIRMED, receipt.transactionHash)
-          callback(null, receipt.transactionHash)
-        }
-      })
-      .on('error', function(error) {
-        if (!error.toString().includes("-32601")) {
-          if(error.message) {
-            emitter.emit(SNACKBAR_ERROR, error.message)
-            return callback(error.message)
-          }
-          emitter.emit(SNACKBAR_ERROR, error)
-          callback(error)
-        }
-      })
-      .catch((error) => {
-        if (!error.toString().includes("-32601")) {
-          if(error.message) {
-            emitter.emit(SNACKBAR_ERROR, error.message)
-            return callback(error.message)
-          }
-          emitter.emit(SNACKBAR_ERROR, error)
-          callback(error)
-        }
-      })
-  }
-
   _getGasPrice = async () => {
     try {
-      const url = 'https://gasprice.poa.network/'
+      const url = config.gasPriceAPI
       const priceString = await rp(url);
       const priceJSON = JSON.parse(priceString)
       if(priceJSON) {
@@ -813,7 +441,17 @@ class Store {
   }
 
   _getProvider = () => {
-    const web3 = new Web3(store.getStore('web3context').library.provider);
+    const web3context = store.getStore('web3context')
+    if(!web3context) {
+      return null
+    }
+    const provider = web3context.library.provider
+    if(!provider) {
+      return null
+    }
+
+    const web3 = new Web3(provider);
+
     return web3
   }
 }
@@ -825,3 +463,36 @@ export default {
   dispatcher: dispatcher,
   emitter: emitter
 };
+
+
+
+function toUTF8Array(str) {
+  var utf8 = [];
+  for (var i=0; i < str.length; i++) {
+    var charcode = str.charCodeAt(i);
+    if (charcode < 0x80) utf8.push(charcode);
+    else if (charcode < 0x800) {
+      utf8.push(0xc0 | (charcode >> 6),
+                0x80 | (charcode & 0x3f));
+    }
+    else if (charcode < 0xd800 || charcode >= 0xe000) {
+      utf8.push(0xe0 | (charcode >> 12),
+                0x80 | ((charcode>>6) & 0x3f),
+                0x80 | (charcode & 0x3f));
+    }
+    // surrogate pair
+    else {
+      i++;
+      // UTF-16 encodes 0x10000-0x10FFFF by
+      // subtracting 0x10000 and splitting the
+      // 20 bits of 0x0-0xFFFFF into two halves
+      charcode = 0x10000 + (((charcode & 0x3ff)<<10)
+                | (str.charCodeAt(i) & 0x3ff));
+      utf8.push(0xf0 | (charcode >>18),
+                0x80 | ((charcode>>12) & 0x3f),
+                0x80 | ((charcode>>6) & 0x3f),
+                0x80 | (charcode & 0x3f));
+    }
+  }
+  return utf8;
+}

@@ -191,7 +191,7 @@ function onDeactivateClicked(deactivate, connector) {
   if(connector && connector.close) {
     connector.close()
   }
-  store.setStore({ account: { }, web3context: null })
+  store.setStore({ account: null, web3context: null })
   emitter.emit(CONNECTION_DISCONNECTED)
 }
 
