@@ -329,6 +329,7 @@ class Store {
       }
 
       const quoteJSON = await rp(options);
+      console.log(quoteJSON);
       callback(null, quoteJSON)
     } catch(e) {
       console.log(e)
@@ -341,17 +342,33 @@ class Store {
     const account = store.getStore('account')
     const { amount, days, contract, asset, quote } = payload.content
 
-    console.log(quote)
+    if( asset.id === 'dai' ) {
+      this._checkApproval(asset, account, amount, config.yInsureAddress, (err) => {
+        if(err) {
+          return emitter.emit(ERROR, err);
+        }
 
-    this._callApply(amount, days, contract, asset, account, quote, (err, data) => {
-      if(err) {
-        emitter.emit(ERROR, err)
-        emitter.emit(SNACKBAR_ERROR, err)
-        return
-      }
+        this._callApply(amount, days, contract, asset, account, quote, (err, data) => {
+          if(err) {
+            emitter.emit(ERROR, err)
+            emitter.emit(SNACKBAR_ERROR, err)
+            return
+          }
 
-      emitter.emit(APPLY_RETURNED, data)
-    })
+          emitter.emit(APPLY_RETURNED, data)
+        })
+      })
+    } else {
+      this._callApply(amount, days, contract, asset, account, quote, (err, data) => {
+        if(err) {
+          emitter.emit(ERROR, err)
+          emitter.emit(SNACKBAR_ERROR, err)
+          return
+        }
+
+        emitter.emit(APPLY_RETURNED, data)
+      })
+    }
   }
 
   _callApply = async (amount, days, contract, asset, account, quote, callback) => {
@@ -373,7 +390,12 @@ class Store {
     console.log(quote.price)
     console.log(account.address)
 
-    insuranceContract.methods.buyCover(contract.address, sendSymbol, coverDetails, days, quote.v, quote.r, quote.s).send({ from: account.address, value: quote.price, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
+    let sendValue = undefined
+    if(asset.symbol === 'ETH') {
+      sendValue = quote.price
+    }
+
+    insuranceContract.methods.buyCover(contract.address, sendSymbol, coverDetails, days, quote.v, quote.r, quote.s).send({ from: account.address, value: sendValue, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
     .on('transactionHash', function(hash){
       callback(null, hash)
     })
@@ -398,7 +420,7 @@ class Store {
   _checkApproval = async (asset, account, amount, contract, callback) => {
     try {
       const web3 = this._getProvider()
-      const erc20Contract = new web3.eth.Contract(config.erc20ABI, asset.erc20address)
+      const erc20Contract = new web3.eth.Contract(config.erc20ABI, asset.address)
       const allowance = await erc20Contract.methods.allowance(account.address, contract).call({ from: account.address })
 
       let ethAllowance = web3.utils.fromWei(allowance, "ether")
