@@ -181,27 +181,22 @@ class Contract extends Component {
   constructor(props) {
     super()
 
-    let asset = ''
-    let assetObject = null
-
-    if(props.accountBalances && props.accountBalances.length > 0) {
-      asset = 'eth'
-      let returned = props.accountBalances.filter((bal) => {
-        return bal.id === asset
-      })
-
-      if(returned.length > 0) {
-        assetObject = returned[0]
-      }
-    }
-
     this.state = {
-      asset: asset,
-      assetObject: assetObject,
+      asset: props.asset,
+      assetObject: props.assetObject,
       days: '',
       daysError: false,
       amount: '',
       amountError: false
+    }
+  }
+
+  componentWillReceiveProps(props) {
+    if(props.asset !== this.state.asset) {
+      this.setState({
+        asset: props.asset,
+        assetObject: props.assetObject
+      })
     }
   }
 
@@ -461,13 +456,21 @@ class Contract extends Component {
   }
 
   onQuote = () => {
-    this.setState({ amountError: false })
+    this.setState({
+      amountError: false,
+      daysError: false
+    })
 
     const { amount, days, assetObject } = this.state
     const { contract, startLoading } = this.props
 
-    if(!amount || isNaN(amount) || amount <= 0 || parseFloat(amount) > parseFloat(assetObject.balance)) {
+    if(!amount || isNaN(amount) || amount <= 0) {
       this.setState({ amountError: true })
+      return false
+    }
+
+    if(!days || isNaN(days) || parseFloat(days) > 365 || parseFloat(days) < 30) {
+      this.setState({ daysError: true })
       return false
     }
 

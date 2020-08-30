@@ -9,7 +9,8 @@ import {
   FormControlLabel,
   TextField,
   Checkbox,
-  InputAdornment
+  InputAdornment,
+  MenuItem
 } from '@material-ui/core';
 import { colors } from '../../theme'
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
@@ -140,6 +141,36 @@ const styles = theme => ({
   grey: {
     color: colors.darkGray
   },
+  dropdownNoBorders: {
+    width: '150px',
+    paddingRight: '12px',
+    border: '1px solid grey',
+    borderRadius: '50px',
+    background: colors.white
+  },
+  assetSelectMenu: {
+    padding: '15px 15px 15px 20px',
+    minWidth: '200px',
+  },
+  assetSelectIcon: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '25px',
+    background: '#dedede',
+    height: '30px',
+    width: '30px',
+    cursor: 'pointer'
+  },
+  assetSelectIconName: {
+    paddingLeft: '10px',
+    display: 'inline-block',
+    verticalAlign: 'middle'
+  },
+  between: {
+    width: '40px',
+    height: '40px'
+  },
 });
 
 class AddCover extends Component {
@@ -148,14 +179,32 @@ class AddCover extends Component {
     super()
 
     const account = store.getStore('account')
+    const accountBalances = store.getStore('balances')
+
+    let asset = ''
+    let assetObject = null
+
+
+    if(accountBalances && accountBalances.length > 0) {
+      asset = 'eth'
+      let returned = accountBalances.filter((bal) => {
+        return bal.id === asset
+      })
+
+      if(returned.length > 0) {
+        assetObject = returned[0]
+      }
+    }
 
     this.state = {
       contracts: store.getStore('contracts'),
-      accountBalances: store.getStore('balances'),
+      accountBalances: accountBalances,
       account: account,
       search: '',
       searchError: false,
-      hideZero: localStorage.getItem('yinsure.finance-hideZero') === '1' ? true : false
+      hideZero: localStorage.getItem('yinsure.finance-hideZero') === '1' ? true : false,
+      asset: asset,
+      assetObject: assetObject
     }
 
     if(account && account.address) {
@@ -236,7 +285,7 @@ class AddCover extends Component {
   };
 
   renderContracts = () => {
-    const { contracts, expanded, search, hideZero, accountBalances } = this.state
+    const { contracts, expanded, search, hideZero, accountBalances, asset, assetObject } = this.state
     const { classes } = this.props
     const width = window.innerWidth
 
@@ -259,6 +308,21 @@ class AddCover extends Component {
       if (contract.address) {
         address = contract.address.substring(0,10)+'...'+contract.address.substring(contract.address.length-8,contract.address.length)
       }
+
+      let capacity = '0.00'
+      let capacitySymbol = ''
+
+      if(contract.capacity && contract.capacity.capacityETH && contract.capacity.capacityDAI)  {
+        if(asset === 'dai') {
+          capacity = (parseFloat(contract.capacity.capacityDAI)/1e18).toFixed(2)
+          capacitySymbol = 'DAI'
+        }
+        if(asset === 'eth') {
+          capacity = (parseFloat(contract.capacity.capacityETH)/1e18).toFixed(2)
+          capacitySymbol = 'ETH'
+        }
+      }
+
       return (
         <Accordion className={ classes.expansionPanel } square key={ contract.id+"_expand" } expanded={ expanded === contract.id} onChange={ () => { this.handleChange(contract.id) } }>
           <AccordionSummary
@@ -282,12 +346,12 @@ class AddCover extends Component {
               </div>
               <div className={classes.heading}>
                 <Typography variant={ 'h5' } className={ classes.grey }>Cover Available</Typography>
-                <Typography variant={ 'h3' } noWrap>{ (contract.capacity && contract.capacity.capacityETH ? (parseFloat(contract.capacity.capacityETH)/1e18).toFixed(2) : '0.00')+' ETH' }</Typography>
+                <Typography variant={ 'h3' } noWrap>{ capacity+' '+capacitySymbol }</Typography>
               </div>
             </div>
           </AccordionSummary>
           <AccordionDetails>
-            <Contract contract={ contract } startLoading={ this.startLoading } stopLoading={ this.stopLoading } accountBalances={ accountBalances } />
+            <Contract contract={ contract } startLoading={ this.startLoading } stopLoading={ this.stopLoading } accountBalances={ accountBalances } asset={ asset } assetObject={ assetObject } />
           </AccordionDetails>
         </Accordion>
       )
@@ -295,22 +359,12 @@ class AddCover extends Component {
   }
 
   renderFilters = () => {
-    const { loading, search, searchError, hideZero } = this.state
+    const { loading, search, searchError } = this.state
     const { classes } = this.props
 
     return (
       <div className={ classes.filters }>
-        <FormControlLabel
-          className={ classes.checkbox }
-          control={
-            <Checkbox
-              checked={ hideZero }
-              onChange={ this.handleChecked }
-              color='primary'
-            />
-          }
-          label="Hide zero balances"
-        />
+        { this.renderAssetSelect() }
         <div className={ classes.between }>
 
         </div>
@@ -331,6 +385,64 @@ class AddCover extends Component {
       </div>
     )
   }
+
+  renderAssetSelect = () => {
+
+    const { loading, classes } = this.props
+    const { accountBalances, asset } = this.state
+
+    return (
+      <TextField
+        id={ 'asset' }
+        name={ 'asset' }
+        select
+        value={ asset }
+        onChange={ this.onSelectChange }
+        SelectProps={{
+          native: false,
+        }}
+        disabled={ loading }
+        className={ classes.dropdownNoBorders }
+      >
+        { accountBalances ? accountBalances.map(this.renderAssetOption) : null }
+      </TextField>
+    )
+  };
+
+  renderAssetOption = (option) => {
+
+    const { classes } = this.props
+
+    return (
+      <MenuItem key={option.id} value={option.id} className={ classes.assetSelectMenu }>
+        <React.Fragment>
+          <div className={ classes.assetSelectIcon }>
+            <img
+              alt=""
+              src={ require('../../assets/'+option.logo) }
+              height="20px"
+            />
+          </div>
+          <div className={ classes.assetSelectIconName }>
+            <Typography variant='h5'>{ option.symbol }</Typography>
+          </div>
+        </React.Fragment>
+      </MenuItem>
+    )
+  }
+
+  onSelectChange = (event, value) => {
+    let asset = this.state.accountBalances.filter((bal) => { return bal.id === event.target.value })
+
+    if(asset.length > 0) {
+      asset = asset[0]
+    }
+
+    this.setState({
+      asset: event.target.value,
+      assetObject: asset
+    })
+  };
 
   onSearchChanged = (event) => {
     let val = []
