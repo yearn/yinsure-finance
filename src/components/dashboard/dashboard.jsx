@@ -21,7 +21,9 @@ import {
   GET_COVER,
   COVER_RETURNED,
   CLAIM,
-  CLAIM_RETURNED
+  CLAIM_RETURNED,
+  REDEEM,
+  REDEEM_RETURNED,
 } from '../../constants'
 
 import Store from "../../stores";
@@ -137,7 +139,7 @@ const styles = theme => ({
     }
   },
   action: {
-    width: '100px'
+    width: '150px'
   }
 });
 
@@ -164,6 +166,7 @@ class Dashboard extends Component {
     emitter.on(CONNECTION_CONNECTED, this.connectionConnected);
     emitter.on(COVER_RETURNED, this.coverReturned);
     emitter.on(CLAIM_RETURNED, this.claimReturned);
+    emitter.on(REDEEM_RETURNED, this.redeemReturned);
   }
 
   componentWillUnmount() {
@@ -172,6 +175,7 @@ class Dashboard extends Component {
     emitter.removeListener(CONNECTION_DISCONNECTED, this.connectionDisconnected);
     emitter.removeListener(COVER_RETURNED, this.coverReturned);
     emitter.removeListener(CLAIM_RETURNED, this.claimReturned);
+    emitter.removeListener(REDEEM_RETURNED, this.redeemReturned);
   };
 
   coverReturned = () => {
@@ -179,7 +183,10 @@ class Dashboard extends Component {
   }
 
   claimReturned = () => {
-    //who knows
+    this.stopLoading()
+  }
+
+  redeemReturned = () => {
     this.stopLoading()
   }
 
@@ -260,8 +267,35 @@ class Dashboard extends Component {
         address = contract.address.substring(0,10)+'...'+contract.address.substring(contract.address.length-8,contract.address.length)
       }
 
+      console.log(contract)
+
+      let status = ''
+
+      switch (contract.coverStatus.coverStatus) {
+        case '0':
+          status = 'Active'
+          break;
+        case '1':
+          status = 'Accepted'
+          break;
+        case '2':
+          status = 'Denied'
+          break;
+        case '3':
+          status = 'Expired'
+          break;
+        case '4':
+          status = 'Submitted'
+          break;
+        case '5':
+          status = 'Requested'
+          break;
+        default:
+          status = ''
+      }
+
       return (
-        <div className={ classes.coverCard } key={ contract.coverId } >
+        <div className={ classes.coverCard } key={ contract.tokenIndex } >
           <div className={ classes.assetSummary }>
             <div className={classes.headingName}>
               <div className={ classes.assetIcon }>
@@ -272,8 +306,8 @@ class Dashboard extends Component {
                 />
               </div>
               <div>
-                <Typography variant={ 'h3' } noWrap>{ address }</Typography>
-                <Typography variant={ 'h5' } className={ classes.grey }>{ contract.name }</Typography>
+                <Typography variant={ 'h3' } noWrap>{ contract.name }</Typography>
+                <Typography variant={ 'h5' } className={ classes.grey }>{ address }</Typography>
               </div>
             </div>
             <div className={classes.heading}>
@@ -284,10 +318,16 @@ class Dashboard extends Component {
               <Typography variant={ 'h5' } className={ classes.grey }>Cover Expires</Typography>
               <Typography variant={ 'h3' } noWrap>{ moment.unix(contract.expirationTimestamp).format('YYYY-MM-DD') }</Typography>
             </div>
-            { contract.coverStatus.coverStatus !== '0' &&
+            { ['2', '4'].includes(contract.coverStatus.coverStatus) &&
               <div className={classes.action}>
                 <Typography variant={ 'h5' } className={ classes.grey }>Claim Status</Typography>
-                <Typography variant={ 'h3' } noWrap>{ contract.coverStatus.payoutCompleted ? 'Paid' : 'Pending' }</Typography>
+                <Typography variant={ 'h3' } noWrap>{ contract.coverStatus.payoutCompleted ? 'Paid' : status }</Typography>
+              </div>
+            }
+            { contract.coverStatus.coverStatus === '3' &&
+              <div className={classes.action}>
+                <Typography variant={ 'h5' } className={ classes.grey }>Status</Typography>
+                <Typography variant={ 'h3' } noWrap>{ status }</Typography>
               </div>
             }
             { contract.coverStatus.coverStatus === '0' &&
@@ -295,8 +335,19 @@ class Dashboard extends Component {
                 <Button
                   variant='outlined'
                   color="primary"
-                  onClick={ () => { this.onClaim(contract.coverId) } }>
+                  onClick={ () => { this.onClaim(contract.tokenIndex) } }>
                   <Typography variant={'h4'}>Claim</Typography>
+                </Button>
+              </div>
+            }
+            {
+              (contract.coverStatus.coverStatus === '1' || contract.coverStatus.payoutCompleted) &&
+              <div className={classes.action}>
+                <Button
+                  variant='outlined'
+                  color="primary"
+                  onClick={ () => { this.onRedeem(contract.tokenIndex) } }>
+                  <Typography variant={'h4'}>Redeem</Typography>
                 </Button>
               </div>
             }
@@ -314,6 +365,10 @@ class Dashboard extends Component {
     this.setState({ loading: true })
   }
 
+  stopLoading = () => {
+    this.setState({ loading: false })
+  }
+
   handleChange = (id) => {
     this.setState({ expanded: this.state.expanded === id ? null : id })
   }
@@ -323,6 +378,10 @@ class Dashboard extends Component {
     dispatcher.dispatch({ type: CLAIM, content: { contractId: contractId } })
   }
 
+  onRedeem = (contractId) => {
+    this.startLoading()
+    dispatcher.dispatch({ type: REDEEM, content: { contractId: contractId } })
+  }
 }
 
 export default withRouter(withStyles(styles)(Dashboard));

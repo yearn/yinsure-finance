@@ -25,3 +25,6 @@ export const COVER_RETURNED = 'COVER_RETURNED'
 
 export const CLAIM = 'CLAIM'
 export const CLAIM_RETURNED = 'CLAIM_RETURNED'
+
+export const REDEEM = 'REDEEM'
+export const REDEEM_RETURNED = 'REDEEM_RETURNED'

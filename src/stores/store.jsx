@@ -16,7 +16,9 @@ import {
   GET_COVER,
   COVER_RETURNED,
   CLAIM,
-  CLAIM_RETURNED
+  CLAIM_RETURNED,
+  REDEEM,
+  REDEEM_RETURNED
 } from '../constants';
 import Web3 from 'web3';
 
@@ -186,6 +188,9 @@ class Store {
             break;
           case CLAIM:
             this.claim(payload);
+            break;
+          case REDEEM:
+            this.redeem(payload);
             break;
           default: {
           }
@@ -439,6 +444,7 @@ class Store {
             const coverStatus = await insuranceContract.methods.getCoverStatus(tokenIndex).call({ from: account.address })
             const address = await quotationContract.methods.getscAddressOfCover(token.coverId).call({ from: account.address })
 
+            token.tokenIndex = tokenIndex
             token.address = address[1]
             token.coverStatus = coverStatus
             token.coverCurrencyDisplay = web3.utils.hexToAscii(token.coverCurrency)
@@ -499,9 +505,49 @@ class Store {
 
     let insuranceContract = new web3.eth.Contract(config.yInsureABI, config.yInsureAddress)
 
-    console.log(contractId)
-
     insuranceContract.methods.submitClaim(contractId).send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
+    .on('transactionHash', function(hash){
+      callback(null, hash)
+    })
+    .on('confirmation', function(confirmationNumber, receipt){
+      if(confirmationNumber === 2) {
+        emitter.emit(SNACKBAR_TRANSACTION_CONFIRMED, receipt.transactionHash)
+      }
+    })
+    .on('receipt', function(receipt){
+      emitter.emit(SNACKBAR_TRANSACTION_RECEIPT, receipt.transactionHash)
+    })
+    .on('error', function(error) {
+      if (!error.toString().includes("-32601")) {
+        if(error.message) {
+          return callback(error.message)
+        }
+        callback(error)
+      }
+    })
+  }
+
+  redeem = async (payload) => {
+    const account = store.getStore('account')
+    const { contractId } = payload.content
+
+    this._callRedeem(contractId, account, (err, data) => {
+      if(err) {
+        emitter.emit(ERROR, err)
+        emitter.emit(SNACKBAR_ERROR, err)
+        return
+      }
+
+      emitter.emit(REDEEM_RETURNED, data)
+    })
+  }
+
+  _callRedeem = async (contractId, account, callback) => {
+    const web3 = this._getProvider()
+
+    let insuranceContract = new web3.eth.Contract(config.yInsureABI, config.yInsureAddress)
+
+    insuranceContract.methods.redeemClaim(contractId).send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
     .on('transactionHash', function(hash){
       callback(null, hash)
     })
