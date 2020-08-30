@@ -225,7 +225,8 @@ class Contract extends Component {
     this.setState({
       loading: false,
       days: '',
-      amount: ''
+      amount: '',
+      quote: null
     })
 
     this.props.stopLoading()

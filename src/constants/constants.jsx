@@ -19,3 +19,9 @@ export const QUOTE_RETURNED = 'QUOTE_RETURNED'
 
 export const APPLY = 'APPLY'
 export const APPLY_RETURNED = 'APPLY_RETURNED'
+
+export const GET_COVER = 'GET_COVER'
+export const COVER_RETURNED = 'COVER_RETURNED'
+
+export const CLAIM = 'CLAIM'
+export const CLAIM_RETURNED = 'CLAIM_RETURNED'

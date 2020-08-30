@@ -13,6 +13,10 @@ import {
   QUOTE_RETURNED,
   APPLY,
   APPLY_RETURNED,
+  GET_COVER,
+  COVER_RETURNED,
+  CLAIM,
+  CLAIM_RETURNED
 } from '../constants';
 import Web3 from 'web3';
 
@@ -60,6 +64,7 @@ class Store {
       },
       web3context: null,
       ethBalance: 0,
+      cover: null,
       balances: [
         {
           id: "eth",
@@ -175,6 +180,12 @@ class Store {
             break;
           case APPLY:
             this.apply(payload);
+            break;
+          case GET_COVER:
+            this.getCover(payload);
+            break;
+          case CLAIM:
+            this.claim(payload);
             break;
           default: {
           }
@@ -380,22 +391,117 @@ class Store {
 
     const sendSymbol = web3.utils.asciiToHex(asset.symbol)
 
-    console.log(contract.address)
-    console.log(sendSymbol)
-    console.log(coverDetails)
-    console.log(days)
-    console.log(quote.v)
-    console.log(quote.r)
-    console.log(quote.s)
-    console.log(quote.price)
-    console.log(account.address)
-
     let sendValue = undefined
     if(asset.symbol === 'ETH') {
       sendValue = quote.price
     }
 
     insuranceContract.methods.buyCover(contract.address, sendSymbol, coverDetails, days, quote.v, quote.r, quote.s).send({ from: account.address, value: sendValue, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
+    .on('transactionHash', function(hash){
+      callback(null, hash)
+    })
+    .on('confirmation', function(confirmationNumber, receipt){
+      if(confirmationNumber === 2) {
+        emitter.emit(SNACKBAR_TRANSACTION_CONFIRMED, receipt.transactionHash)
+      }
+    })
+    .on('receipt', function(receipt){
+      emitter.emit(SNACKBAR_TRANSACTION_RECEIPT, receipt.transactionHash)
+    })
+    .on('error', function(error) {
+      if (!error.toString().includes("-32601")) {
+        if(error.message) {
+          return callback(error.message)
+        }
+        callback(error)
+      }
+    })
+  }
+
+  getCover = async (payload) => {
+    try {
+      const web3 = this._getProvider()
+      const account = store.getStore('account')
+      const contracts = store.getStore('contracts')
+
+      const insuranceContract = new web3.eth.Contract(config.yInsureABI, config.yInsureAddress)
+      const quotationContract = new web3.eth.Contract(config.quotationABI, config.quotationAddress)
+
+      const balanceOf = await insuranceContract.methods.balanceOf(account.address).call({ from: account.address })
+
+      if(balanceOf > 0) {
+        var arr = [...Array(balanceOf).keys()];
+
+        async.map(arr, async (index) => {
+          try {
+            const tokenIndex = await insuranceContract.methods.tokenOfOwnerByIndex(account.address, index).call({ from: account.address })
+            const token = await insuranceContract.methods.tokens(tokenIndex).call({ from: account.address })
+            const coverStatus = await insuranceContract.methods.getCoverStatus(tokenIndex).call({ from: account.address })
+            const address = await quotationContract.methods.getscAddressOfCover(token.coverId).call({ from: account.address })
+
+            token.address = address[1]
+            token.coverStatus = coverStatus
+            token.coverCurrencyDisplay = web3.utils.hexToAscii(token.coverCurrency)
+            token.coverPriceDisplay = web3.utils.fromWei(token.coverPrice, "ether")
+
+            let contractDetails = contracts.filter((contract) => {
+              return contract.address === token.address
+            })
+
+            if(contractDetails.length > 0) {
+              token.logo = contractDetails[0].logo
+              token.name = contractDetails[0].name
+            }
+
+            return token
+          } catch (ex) {
+            return null
+          }
+
+        }, (err, data) => {
+          if(err) {
+            emitter.emit(ERROR, err)
+            return emitter.emit(SNACKBAR_ERROR, err)
+          }
+
+          console.log(data)
+          store.setStore({ cover: data })
+          emitter.emit(COVER_RETURNED, data)
+        })
+      } else {
+        store.setStore({ cover: [] })
+        emitter.emit(COVER_RETURNED, [])
+      }
+
+    } catch (ex) {
+      emitter.emit(ERROR, ex)
+      emitter.emit(SNACKBAR_ERROR, ex)
+    }
+  }
+
+  claim = async (payload) => {
+    const account = store.getStore('account')
+    const { contractId } = payload.content
+
+    this._callClaim(contractId, account, (err, data) => {
+      if(err) {
+        emitter.emit(ERROR, err)
+        emitter.emit(SNACKBAR_ERROR, err)
+        return
+      }
+
+      emitter.emit(CLAIM_RETURNED, data)
+    })
+  }
+
+  _callClaim = async (contractId, account, callback) => {
+    const web3 = this._getProvider()
+
+    let insuranceContract = new web3.eth.Contract(config.yInsureABI, config.yInsureAddress)
+
+    console.log(contractId)
+
+    insuranceContract.methods.submitClaim(contractId).send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
     .on('transactionHash', function(hash){
       callback(null, hash)
     })
