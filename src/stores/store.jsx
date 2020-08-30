@@ -266,7 +266,7 @@ class Store {
         return
       }
 
-      console.log(contractData)
+      // console.log(contractData)
 
       store.setStore({ contracts: contractData })
       emitter.emit(CONTRACT_BALANCES_RETURNED)
@@ -345,7 +345,7 @@ class Store {
       }
 
       const quoteJSON = await rp(options);
-      console.log(quoteJSON);
+      // console.log(quoteJSON);
       callback(null, quoteJSON)
     } catch(e) {
       console.log(e)
@@ -425,24 +425,35 @@ class Store {
 
   getCover = async (payload) => {
     try {
+      // console.log('GETTING COVER')
       const web3 = this._getProvider()
       const account = store.getStore('account')
       const contracts = store.getStore('contracts')
 
+      // console.log(account)
+      // console.log(contracts)
       const insuranceContract = new web3.eth.Contract(config.yInsureABI, config.yInsureAddress)
       const quotationContract = new web3.eth.Contract(config.quotationABI, config.quotationAddress)
 
+      // console.log(insuranceContract)
+
       const balanceOf = await insuranceContract.methods.balanceOf(account.address).call({ from: account.address })
 
+      // console.log(balanceOf)
       if(balanceOf > 0) {
         var arr = [...Array(balanceOf).keys()];
 
-        async.map(arr, async (index) => {
+        // console.log(arr)
+        async.map(arr, async (index, callback) => {
+
+          // console.log(index)
           try {
             const tokenIndex = await insuranceContract.methods.tokenOfOwnerByIndex(account.address, index).call({ from: account.address })
             const token = await insuranceContract.methods.tokens(tokenIndex).call({ from: account.address })
             const coverStatus = await insuranceContract.methods.getCoverStatus(tokenIndex).call({ from: account.address })
             const address = await quotationContract.methods.getscAddressOfCover(token.coverId).call({ from: account.address })
+
+            // console.log(tokenIndex)
 
             token.tokenIndex = tokenIndex
             token.address = address[1]
@@ -454,32 +465,39 @@ class Store {
               return contract.address === token.address
             })
 
+            // console.log(contractDetails)
             if(contractDetails.length > 0) {
               token.logo = contractDetails[0].logo
               token.name = contractDetails[0].name
             }
 
-            return token
+            // console.log(token)
+            return callback(null, token)
           } catch (ex) {
-            return null
+            console.log(ex)
+            return callback(null, null)
           }
 
         }, (err, data) => {
+          // console.log('RETURNED')
           if(err) {
+            console.log(err)
             emitter.emit(ERROR, err)
             return emitter.emit(SNACKBAR_ERROR, err)
           }
 
-          console.log(data)
+          // console.log(data)
           store.setStore({ cover: data })
           emitter.emit(COVER_RETURNED, data)
         })
       } else {
+        // console.log('No balance of here.')
         store.setStore({ cover: [] })
         emitter.emit(COVER_RETURNED, [])
       }
 
     } catch (ex) {
+      console.log(ex)
       emitter.emit(ERROR, ex)
       emitter.emit(SNACKBAR_ERROR, ex)
     }
