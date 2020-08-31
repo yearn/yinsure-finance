@@ -5,12 +5,8 @@ import * as moment from 'moment';
 import {
   Typography,
   Button,
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
 } from '@material-ui/core';
 import { colors } from '../../theme'
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 
 import Loader from '../loader'
 
@@ -96,6 +92,7 @@ const styles = theme => ({
     background: colors.white,
     borderRadius: '50px',
     padding: '30px',
+    marginBottom: '12px'
   },
   assetSummary: {
     display: 'flex',
@@ -243,7 +240,7 @@ class Dashboard extends Component {
   };
 
   renderCover = () => {
-    const { expanded, cover } = this.state
+    const { cover } = this.state
     const { classes } = this.props
     const width = window.innerWidth
 
@@ -255,19 +252,10 @@ class Dashboard extends Component {
 
 
     return cover.map((contract) => {
-      let logo = 'ETH-logo.png'
-      if(contract.coverCurrencyDisplay.includes('ETH')) {
-        logo = 'ETH-logo.png'
-      } else if(contract.coverCurrencyDisplay.includes('DAI')) {
-        logo = 'DAI-logo.png'
-      }
-
       var address = null;
       if (contract.address) {
         address = contract.address.substring(0,10)+'...'+contract.address.substring(contract.address.length-8,contract.address.length)
       }
-
-      console.log(contract)
 
       let status = ''
 

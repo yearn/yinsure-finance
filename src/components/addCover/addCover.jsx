@@ -6,9 +6,7 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
-  FormControlLabel,
   TextField,
-  Checkbox,
   InputAdornment,
   MenuItem
 } from '@material-ui/core';
