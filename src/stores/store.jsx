@@ -262,30 +262,56 @@ class Store {
       return false
     }
 
-    // const web3 = await this._getProvider();
-
-    async.map(contracts, (contract, callback) => {
-      async.parallel([
-        // (callbackInner) => { this._getERC20Balance(web3, contract, account, callbackInner) },
-        (callbackInner) => { this._getContractCapacity(contract, callbackInner) },
-      ], (err, data) => {
-        // contract.balance = data[0]
-        contract.capacity = data[0]
-
-        callback(null, contract)
-      })
-    }, (err, contractData) => {
+    this._getCapacities((err, capacities) => {
       if(err) {
         emitter.emit(ERROR)
         emitter.emit(SNACKBAR_ERROR)
         return
       }
 
-      // console.log(contractData)
+      const contractData = contracts.map((contract) => {
+        const capacity = capacities.filter((capacity) => {
+          return capacity.contractAddress.toLowerCase() === contract.address.toLowerCase()
+        })
+
+        if(capacity.length > 0) {
+          contract.capacity = capacity[0]
+        } else {
+          contract.capacity = {
+            capacityETH: 0,
+            capacityDAI: 0,
+            netStakedNXM: 0
+          }
+        }
+
+        return contract
+      })
 
       store.setStore({ contracts: contractData })
       emitter.emit(CONTRACT_BALANCES_RETURNED)
     })
+
+
+    // async.map(contracts, (contract, callback) => {
+    //   async.parallel([
+    //     (callbackInner) => { this._getContractCapacity(contract, callbackInner) },
+    //   ], (err, data) => {
+    //     contract.capacity = data[0]
+    //
+    //     callback(null, contract)
+    //   })
+    // }, (err, contractData) => {
+    //   if(err) {
+    //     emitter.emit(ERROR)
+    //     emitter.emit(SNACKBAR_ERROR)
+    //     return
+    //   }
+    //
+    //   // console.log(contractData)
+    //
+    //   store.setStore({ contracts: contractData })
+    //   emitter.emit(CONTRACT_BALANCES_RETURNED)
+    // })
   }
 
   _getERC20Balance = async (web3, contract, account, callback) => {
@@ -301,6 +327,26 @@ class Store {
       }
     } catch(ex) {
       return callback(ex)
+    }
+  }
+
+  _getCapacities = async (callback) => {
+    try {
+      const url = config.nexusMutualAPI+`v1/capacities`
+
+      const options = {
+        uri: url,
+        headers: {
+          'x-api-key': config.nexusMutualKey
+        },
+        json: true
+      }
+
+      const capacityJSON = await rp(options);
+      callback(null, capacityJSON)
+    } catch(e) {
+      console.log(e)
+      return callback(null, [])
     }
   }
 
