@@ -301,7 +301,7 @@ class Contract extends Component {
           error={ amountError }
           onChange={ this.onChange }
           disabled={ loading }
-          placeholder="0.00"
+          placeholder="0"
           variant="outlined"
           onKeyDown={ this.inputKeyDown }
           InputProps={{
@@ -446,7 +446,7 @@ class Contract extends Component {
 
   onChange = (event) => {
     let val = []
-    val[event.target.id] = event.target.value
+    val[event.target.id] = Math.floor(event.target.value)
     this.setState(val)
   }
 
@@ -486,7 +486,7 @@ class Contract extends Component {
     const { amount, days, assetObject, quote } = this.state
     const { contract, startLoading } = this.props
 
-    if(!amount || isNaN(amount) || amount <= 0 || parseFloat(amount) > parseFloat(assetObject.balance)) {
+    if(!amount || isNaN(amount) || amount <= 0) {
       this.setState({ amountError: true })
       return false
     }
