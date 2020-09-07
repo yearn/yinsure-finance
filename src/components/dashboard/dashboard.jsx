@@ -263,6 +263,11 @@ class Dashboard extends Component {
 
     return cover.map((contract) => {
       var address = null;
+
+      if(!contract) {
+        return null
+      }
+
       if (contract.address) {
         address = contract.address.substring(0,10)+'...'+contract.address.substring(contract.address.length-8,contract.address.length)
       }

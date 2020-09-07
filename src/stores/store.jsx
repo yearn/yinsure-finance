@@ -586,11 +586,23 @@ class Store {
           // console.log(index)
           try {
             const tokenIndex = await insuranceContract.methods.tokenOfOwnerByIndex(account.address, index).call({ from: account.address })
-            const token = await insuranceContract.methods.tokens(tokenIndex).call({ from: account.address })
-            const coverStatus = await insuranceContract.methods.getCoverStatus(tokenIndex).call({ from: account.address })
-            const address = await quotationContract.methods.getscAddressOfCover(token.coverId).call({ from: account.address })
-
             // console.log(tokenIndex)
+            const token = await insuranceContract.methods.tokens(tokenIndex).call({ from: account.address })
+            // console.log(token)
+            let coverStatus = {
+              0: "0",
+              1: false,
+              coverStatus: "0",
+              payoutCompleted: false
+            }
+            try {
+              coverStatus = await insuranceContract.methods.getCoverStatus(tokenIndex).call({ from: account.address })
+              // console.log(coverStatus)
+            } catch(ex) {
+              console.log(ex)
+            }
+            const address = await quotationContract.methods.getscAddressOfCover(token.coverId).call({ from: account.address })
+            // console.log(address)
 
             token.tokenIndex = tokenIndex
             token.address = address[1]
@@ -615,6 +627,7 @@ class Store {
               return token
             }
           } catch (ex) {
+            console.log(ex)
             if(callback) {
               callback(null, null)
             } else {
