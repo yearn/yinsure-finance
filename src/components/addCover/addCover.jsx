@@ -182,7 +182,6 @@ class AddCover extends Component {
     let asset = ''
     let assetObject = null
 
-
     if(accountBalances && accountBalances.length > 0) {
       asset = 'eth'
       let returned = accountBalances.filter((bal) => {
@@ -202,7 +201,8 @@ class AddCover extends Component {
       searchError: false,
       hideZero: localStorage.getItem('yinsure.finance-hideZero') === '1' ? true : false,
       asset: asset,
-      assetObject: assetObject
+      assetObject: assetObject,
+      loading: true
     }
 
     if(account && account.address) {
@@ -231,7 +231,10 @@ class AddCover extends Component {
   }
 
   contractBalancesReturned = () => {
-    this.setState({ contracts: store.getStore('contracts') })
+    this.setState({
+      contracts: store.getStore('contracts'),
+      loading: false,
+    })
   }
 
   connectionConnected = () => {

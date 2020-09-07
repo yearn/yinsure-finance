@@ -150,7 +150,8 @@ class Dashboard extends Component {
 
     this.state = {
       account: account,
-      cover: cover
+      cover: cover,
+      loading: cover ? false : true
     }
 
     if(account && account.address) {
@@ -176,7 +177,10 @@ class Dashboard extends Component {
   };
 
   coverReturned = () => {
-    this.setState({ cover: store.getStore('cover') })
+    this.setState({
+      loading: false,
+      cover: store.getStore('cover')
+    })
   }
 
   claimReturned = () => {
@@ -244,7 +248,13 @@ class Dashboard extends Component {
     const { classes } = this.props
     const width = window.innerWidth
 
-    if(!cover || cover.length === 0) {
+    if(!cover) {
+      return (
+        <Typography variant={'h4'}>Loading your cover ...</Typography>
+      )
+    }
+
+    if(cover.length === 0) {
       return (
         <Typography variant={'h4'}>You don't have any cover yet</Typography>
       )
