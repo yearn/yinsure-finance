@@ -136,7 +136,7 @@ class Store {
           }
         },
         {
-          id: "crv",
+          id: "crvBTC",
           name: 'Curve BTC',
           address: '0x7fC77b5c7614E1533320Ea6DDc2Eb61fa00A9714',
           symbol: 'CRV',
@@ -151,7 +151,7 @@ class Store {
           }
         },
         {
-          id: "crv",
+          id: "crvSC",
           name: 'Curve Stablecoins',
           address: '0x79a8C46DeA5aDa233ABaFFD40F3A0A2B1e5A4F27',
           symbol: 'CRV',

@@ -15,6 +15,7 @@ import Disclaimer from './components/disclaimer';
 import SnackbarController from './components/snackbar';
 import Dashboard from './components/dashboard';
 import AddCover from './components/addCover';
+import Footer from './components/footer';
 
 import { injected } from "./stores/connectors";
 
@@ -107,6 +108,7 @@ class App extends Component {
                   <Dashboard />
                 </Route>
               </Switch>
+              <Footer />
             </div>
           }
           <SnackbarController />
