@@ -570,6 +570,7 @@ class Store {
       // console.log(contracts)
       const insuranceContract = new web3.eth.Contract(config.yInsureABI, config.yInsureAddress)
       const quotationContract = new web3.eth.Contract(config.quotationABI, config.quotationAddress)
+      const claimContract = new web3.eth.Contract(config.claimABI, config.claimAddress)
 
       // console.log(insuranceContract)
 
@@ -589,24 +590,13 @@ class Store {
             // console.log(tokenIndex)
             const token = await insuranceContract.methods.tokens(tokenIndex).call({ from: account.address })
             // console.log(token)
-            let coverStatus = {
-              0: "0",
-              1: false,
-              coverStatus: "0",
-              payoutCompleted: false
-            }
-            try {
-              coverStatus = await insuranceContract.methods.getCoverStatus(tokenIndex).call({ from: account.address })
-              // console.log(coverStatus)
-            } catch(ex) {
-              console.log(ex)
-            }
+            let claimStatus = await claimContract.methods.getClaimbyIndex(token.claimId).call({ from: account.address })
             const address = await quotationContract.methods.getscAddressOfCover(token.coverId).call({ from: account.address })
             // console.log(address)
 
             token.tokenIndex = tokenIndex
             token.address = address[1]
-            token.coverStatus = coverStatus
+            token.coverStatus = claimStatus
             token.coverCurrencyDisplay = web3.utils.hexToAscii(token.coverCurrency)
             token.coverPriceDisplay = web3.utils.fromWei(token.coverPrice, "ether")
 

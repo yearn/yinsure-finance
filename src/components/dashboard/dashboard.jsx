@@ -272,31 +272,6 @@ class Dashboard extends Component {
         address = contract.address.substring(0,10)+'...'+contract.address.substring(contract.address.length-8,contract.address.length)
       }
 
-      let status = ''
-
-      switch (contract.coverStatus.coverStatus) {
-        case '0':
-          status = 'Active'
-          break;
-        case '1':
-          status = 'Accepted'
-          break;
-        case '2':
-          status = 'Denied'
-          break;
-        case '3':
-          status = 'Expired'
-          break;
-        case '4':
-          status = 'Submitted'
-          break;
-        case '5':
-          status = 'Requested'
-          break;
-        default:
-          status = ''
-      }
-
       return (
         <div className={ classes.coverCard } key={ contract.tokenIndex } >
           <div className={ classes.assetSummary }>
@@ -321,19 +296,7 @@ class Dashboard extends Component {
               <Typography variant={ 'h5' } className={ classes.grey }>Cover Expires</Typography>
               <Typography variant={ 'h3' } noWrap>{ moment.unix(contract.expirationTimestamp).format('YYYY-MM-DD') }</Typography>
             </div>
-            { ['2', '4'].includes(contract.coverStatus.coverStatus) &&
-              <div className={classes.action}>
-                <Typography variant={ 'h5' } className={ classes.grey }>Claim Status</Typography>
-                <Typography variant={ 'h3' } noWrap>{ contract.coverStatus.payoutCompleted ? 'Paid' : status }</Typography>
-              </div>
-            }
-            { contract.coverStatus.coverStatus === '3' &&
-              <div className={classes.action}>
-                <Typography variant={ 'h5' } className={ classes.grey }>Status</Typography>
-                <Typography variant={ 'h3' } noWrap>{ status }</Typography>
-              </div>
-            }
-            { contract.coverStatus.coverStatus === '0' &&
+            { contract.coverStatus.status === '0' &&
               <div className={classes.action}>
                 <Button
                   variant='outlined'
@@ -343,8 +306,21 @@ class Dashboard extends Component {
                 </Button>
               </div>
             }
+            { contract.coverStatus.finalVerdict !== '1' && contract.coverStatus.finalVerdict !== '-1' && contract.coverStatus.status !== '0' &&
+              <div className={classes.action}>
+                <Typography variant={ 'h5' } className={ classes.grey }>Status</Typography>
+                <Typography variant={ 'h3' } noWrap>Pending</Typography>
+              </div>
+            }
             {
-              (contract.coverStatus.coverStatus === '1' || contract.coverStatus.payoutCompleted) &&
+              (contract.coverStatus.finalVerdict === '-1') &&
+              <div className={classes.action}>
+                <Typography variant={ 'h5' } className={ classes.grey }>Status</Typography>
+                <Typography variant={ 'h3' } noWrap>Rejected</Typography>
+              </div>
+            }
+            {
+              (contract.coverStatus.finalVerdict === '1') &&
               <div className={classes.action}>
                 <Button
                   variant='outlined'
