@@ -91,6 +91,21 @@ class Store {
       ],
       contracts: [
         {
+          id: "yfi",
+          name: 'yearn.finance',
+          address: '0x9D25057e62939D3408406975aD75Ffe834DA4cDd',
+          symbol: 'YFI',
+          logo: 'YFI-logo.png',
+          description: '',
+          decimals: 18,
+          balance: 0,
+          capacity: {
+            capacityETH: 0,
+            capacityDAI: 0,
+            netStakedNXM: 0
+          }
+        },
+        {
           id: "AAVE",
           name: 'Aave',
           address: '0xc1D2819CE78f3E15Ee69c6738eB1B400A26e632A',
@@ -151,6 +166,51 @@ class Store {
           }
         },
         {
+          id: "dforce",
+          name: 'dforce',
+          address: '0x02285AcaafEB533e03A7306C55EC031297df9224',
+          symbol: 'DF',
+          logo: 'dforce-logo.jpg',
+          description: '',
+          decimals: 18,
+          balance: 0,
+          capacity: {
+            capacityETH: 0,
+            capacityDAI: 0,
+            netStakedNXM: 0
+          }
+        },
+        {
+          id: "mstable",
+          name: 'mstable',
+          address: '0xAFcE80b19A8cE13DEc0739a1aaB7A028d6845Eb3',
+          symbol: 'MUSD',
+          logo: 'MUSD-logo.png',
+          description: '',
+          decimals: 18,
+          balance: 0,
+          capacity: {
+            capacityETH: 0,
+            capacityDAI: 0,
+            netStakedNXM: 0
+          }
+        },
+        {
+          id: "opyn",
+          name: 'opyn',
+          address: '0xb529964F86fbf99a6aA67f72a27e59fA3fa4FEaC',
+          symbol: 'opyn',
+          logo: 'OPYN-logo.png',
+          description: '',
+          decimals: 18,
+          balance: 0,
+          capacity: {
+            capacityETH: 0,
+            capacityDAI: 0,
+            netStakedNXM: 0
+          }
+        },
+        {
           id: "snx",
           name: 'SynthetiX',
           address: '0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F',
@@ -166,11 +226,11 @@ class Store {
           }
         },
         {
-          id: "yfi",
-          name: 'yearn.finance',
-          address: '0x9D25057e62939D3408406975aD75Ffe834DA4cDd',
-          symbol: 'YFI',
-          logo: 'YFI-logo.png',
+          id: "uma",
+          name: 'UMA',
+          address: '0x3e532e6222afe9Bcf02DCB87216802c75D5113aE',
+          symbol: 'UMA',
+          logo: 'UMA-logo.png',
           description: '',
           decimals: 18,
           balance: 0,
@@ -179,7 +239,22 @@ class Store {
             capacityDAI: 0,
             netStakedNXM: 0
           }
-        }
+        },
+        {
+          id: "uniswap",
+          name: 'Uniswap V2',
+          address: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
+          symbol: 'UNI',
+          logo: 'uniswap-logo.png',
+          description: '',
+          decimals: 18,
+          balance: 0,
+          capacity: {
+            capacityETH: 0,
+            capacityDAI: 0,
+            netStakedNXM: 0
+          }
+        },
       ]
     }
 
