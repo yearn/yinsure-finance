@@ -226,6 +226,21 @@ class Store {
           }
         },
         {
+          id: "tbtc",
+          name: 'TBTC',
+          address: '0xe20A5C79b39bC8C363f0f49ADcFa82C2a01ab64a',
+          symbol: 'TBTC',
+          logo: 'TBTC-logo.png',
+          description: '',
+          decimals: 18,
+          balance: 0,
+          capacity: {
+            capacityETH: 0,
+            capacityDAI: 0,
+            netStakedNXM: 0
+          }
+        },
+        {
           id: "uma",
           name: 'UMA',
           address: '0x3e532e6222afe9Bcf02DCB87216802c75D5113aE',
