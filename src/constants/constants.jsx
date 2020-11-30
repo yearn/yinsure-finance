@@ -28,3 +28,6 @@ export const CLAIM_RETURNED = 'CLAIM_RETURNED'
 
 export const REDEEM = 'REDEEM'
 export const REDEEM_RETURNED = 'REDEEM_RETURNED'
+
+export const SWAP = 'SWAP'
+export const SWAP_RETURNED = 'SWAP_RETURNED'
