@@ -8,6 +8,7 @@ import {
 import { colors } from '../../theme'
 
 import UnlockModal from '../unlock/unlockModal.jsx'
+import ArmorIcon from '../icons/ArmorIcon'
 
 const styles = theme => ({
   root: {
@@ -15,11 +16,10 @@ const styles = theme => ({
     display: 'flex',
     flexDirection: 'column',
     background: colors.blue,
-    minWidth: '100vw',
-    padding: '36px 24px'
+    width: '100%',
+    overflow: 'hidden',
   },
   connectHeading: {
-    maxWidth: '300px',
     textAlign: 'center',
     color: colors.white
   },
@@ -31,7 +31,6 @@ const styles = theme => ({
     borderColor: colors.white
   },
   notConnectedRoot: {
-    flex: 1,
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
@@ -73,7 +72,38 @@ const styles = theme => ({
     borderRadius: '0.75rem',
     marginBottom: '24px',
     fontWeight: 1,
-    color: colors.white
+    color: colors.white,
+    marginTop: '20px',
+  },
+  poweredByArmor: {
+    padding: '8px 20px 7px',
+    borderBottom: '1px solid '+colors.white,
+    textDecoration: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    transition: 'all .3s',
+    width: '100%',
+    justifyContent: 'center',
+    "&:hover": {
+      borderBottom: '1px solid transparent',
+    }
+  },
+  poweredByArmorText: {
+    color: colors.white,
+    fontSize: '14px',
+    lineHeight: '17px',
+    marginRight: '10px',
+    '&:visited': {
+      color: colors.white,
+    }
+  },
+  mainBox: {
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'column',
+    minHeight: 'calc(100vh - 41px)',
   }
 });
 
@@ -108,6 +138,10 @@ class Account extends Component {
 
     return (
       <div className={ classes.notConnectedRoot }>
+        <a href="https://armor.fi" className={classes.poweredByArmor}>
+          <Typography className={classes.poweredByArmorText}>Powered by Armor</Typography> <ArmorIcon width="25" height="25" />
+        </a>
+        <div className={classes.mainBox}>
         <Typography variant={'h5'} className={ classes.disclaimer }>This project is in beta. Use at your own risk.</Typography>
         <div className={ classes.connectHeading }>
           <Typography variant='h3'>Connect your wallet to continue</Typography>
@@ -123,6 +157,8 @@ class Account extends Component {
             <Typography>Connect</Typography>
           </Button>
         </div>
+        </div>
+        
       </div>
     )
   }
