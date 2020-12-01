@@ -3,6 +3,7 @@ import { withStyles } from '@material-ui/core/styles'
 import { Typography } from '@material-ui/core'
 import { withRouter } from 'react-router-dom'
 import { colors } from '../../theme'
+import ArmorIcon from '../icons/ArmorIcon'
 
 const styles = (theme) => ({
   root: {
@@ -21,6 +22,16 @@ const styles = (theme) => ({
     borderRadius: '0.75rem',
     lineHeight: '1.2',
     background: colors.white,
+    cursor: 'pointer',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
+  poweredBy: {
+    display: 'flex',
+    flexDirection: 'revert',
+    alignItems: 'center',
+    marginTop: '3px',
   },
 })
 
@@ -36,8 +47,16 @@ class Disclaimer extends Component {
 
     return (
       <div className={classes.root}>
-        <Typography variant={'h5'} className={classes.disclaimer}>
-          <a href="https://armor.fi">This project is in beta. Use at your own risk.</a>
+        <Typography
+          variant={'h5'}
+          className={classes.disclaimer}
+          onClick={() => window.location.assign('https://armor.fi')}
+        >
+          <div>This project is in beta. Use at your own risk.</div>
+          <div className={classes.poweredBy}>
+            Powered by Armor&nbsp;
+            <ArmorIcon width="16" height="16" />
+          </div>
         </Typography>
       </div>
     )

@@ -110,9 +110,9 @@ const styles = (theme) => ({
     paddingLeft: '24px',
     display: 'flex',
     flexDirection: 'column',
-    // [theme.breakpoints.down('sm')]: {
-    //   display: 'none',
-    // },
+    [theme.breakpoints.down('sm')]: {
+      display: 'none',
+    },
   },
   logoWrapper: {
     flex: 1,
@@ -193,29 +193,24 @@ class Header extends Component {
     return (
       <div className={classes.root}>
         <div className={classes.headerV2}>
-          <div className={classes.logoWrapper}>
-            <div className={classes.icon}>
-              <img
-                alt=""
-                src={require('../../assets/YFI-logo.png')}
-                height={'40px'}
-                onClick={() => {
-                  this.nav('')
-                }}
-              />
-              <Typography
-                variant={'h3'}
-                className={classes.name}
-                onClick={() => {
-                  this.nav('')
-                }}
-              >
-                yinsure.finance
-                <a href="https://armor.fi" className={classes.poweredByArmor}>
-                  <span>Powered by Armor</span> <ArmorIcon width="16" height="16" />
-                </a>
-              </Typography>
-            </div>
+          <div className={classes.icon}>
+            <img
+              alt=""
+              src={require('../../assets/YFI-logo.png')}
+              height={'40px'}
+              onClick={() => {
+                this.nav('')
+              }}
+            />
+            <Typography
+              variant={'h3'}
+              className={classes.name}
+              onClick={() => {
+                this.nav('')
+              }}
+            >
+              yinsure.finance
+            </Typography>
           </div>
           <div className={classes.links}>
             {this.renderLink('dashboard')}

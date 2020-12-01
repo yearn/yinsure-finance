@@ -9,7 +9,7 @@ import ArmorIcon from '../icons/ArmorIcon'
 
 const styles = (theme) => ({
   root: {
-    // flex: 1,
+    flex: 1,
     display: 'flex',
     flexDirection: 'column',
     background: colors.blue,
@@ -71,25 +71,10 @@ const styles = (theme) => ({
     fontWeight: 1,
     color: colors.white,
     marginTop: '20px',
-  },
-  poweredByArmor: {
-    padding: '8px 20px 7px',
-    background: '#fff',
-    textDecoration: 'none',
+    cursor: 'pointer',
     display: 'flex',
+    flexDirection: 'column',
     alignItems: 'center',
-    transition: 'all .3s',
-    width: '100%',
-    justifyContent: 'center',
-  },
-  poweredByArmorText: {
-    color: '#2F80ED',
-    fontSize: '14px',
-    lineHeight: '17px',
-    marginRight: '10px',
-    '&:visited': {
-      color: '#2F80ED',
-    },
   },
   mainBox: {
     flex: 1,
@@ -130,8 +115,12 @@ class Account extends Component {
     return (
       <div className={classes.notConnectedRoot}>
         <div className={classes.mainBox}>
-          <Typography variant={'h5'} className={classes.disclaimer}>
-            This project is in beta. Use at your own risk.
+          <Typography
+            variant={'h5'}
+            className={classes.disclaimer}
+            onClick={() => window.location.assign('https://armor.fi')}
+          >
+            <div>This project is in beta. Use at your own risk.</div>
           </Typography>
           <div className={classes.connectHeading}>
             <Typography variant="h3">Connect your wallet to continue</Typography>
@@ -148,10 +137,6 @@ class Account extends Component {
             </Button>
           </div>
         </div>
-        <a href="https://armor.fi" className={classes.poweredByArmor}>
-          <Typography className={classes.poweredByArmorText}>Powered by Armor</Typography>{' '}
-          <ArmorIcon width="25" height="25" />
-        </a>
       </div>
     )
   }
