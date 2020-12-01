@@ -77,24 +77,21 @@ const styles = theme => ({
   },
   poweredByArmor: {
     padding: '8px 20px 7px',
-    borderBottom: '1px solid '+colors.white,
+    background: '#fff',
     textDecoration: 'none',
     display: 'flex',
     alignItems: 'center',
     transition: 'all .3s',
     width: '100%',
     justifyContent: 'center',
-    "&:hover": {
-      borderBottom: '1px solid transparent',
-    }
   },
   poweredByArmorText: {
-    color: colors.white,
+    color: '#2F80ED',
     fontSize: '14px',
     lineHeight: '17px',
     marginRight: '10px',
     '&:visited': {
-      color: colors.white,
+      color: '#2F80ED',
     }
   },
   mainBox: {
@@ -138,9 +135,6 @@ class Account extends Component {
 
     return (
       <div className={ classes.notConnectedRoot }>
-        <a href="https://armor.fi" className={classes.poweredByArmor}>
-          <Typography className={classes.poweredByArmorText}>Powered by Armor</Typography> <ArmorIcon width="25" height="25" />
-        </a>
         <div className={classes.mainBox}>
         <Typography variant={'h5'} className={ classes.disclaimer }>This project is in beta. Use at your own risk.</Typography>
         <div className={ classes.connectHeading }>
@@ -158,7 +152,9 @@ class Account extends Component {
           </Button>
         </div>
         </div>
-        
+        <a href="https://armor.fi" className={classes.poweredByArmor}>
+          <Typography className={classes.poweredByArmorText}>Powered by Armor</Typography> <ArmorIcon width="25" height="25" />
+        </a>
       </div>
     )
   }
