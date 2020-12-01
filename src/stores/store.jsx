@@ -776,16 +776,25 @@ class Store {
     try {
       const account = store.getStore('account')
       const web3 = this._getProvider()
-      const arNftV2Contract = new web3.eth.Contract(config.arNftV2ABI, config.arNftV2Address)
+      const arNftContractInstance = new web3.eth.Contract(config.arNftV2ABI, config.arNftV2Address)
+      const yNftContractInstance = new web3.eth.Contract(config.yInsureABI, config.yInsureAddress)
       const gasPrice = (await axios(config.gasPriceAPI)).data.fast.toFixed(0)
-      const baseUrl = 'https://app.nexusmutual.io/cover/proof-of-loss/add-affected-addresses'
-      window.open(`${baseUrl}?coverId=${contract.coverId}&owner=${contract.address}`, '_blank')
-      const submitClaimResponse = await arNftV2Contract.methods.submitClaim(contract.coverId).send({
+      const approved = await yNftContractInstance.methods.approve(config.arNftV2Address, contract.tokenIndex).send({
         from: account.address,
         value: '0',
         gasPrice: web3.utils.toWei(gasPrice, 'gwei'),
       })
-      return submitClaimResponse
+
+      console.log({ approved })
+
+      const swapped = await arNftContractInstance.methods.swapYnft(contract.tokenIndex).send({
+        from: account.address,
+        value: '0',
+        gasPrice: web3.utils.toWei(gasPrice, 'gwei'),
+      })
+
+      console.log({ swapped })
+      return { approved, swapped }
     } catch (e) {
       console.error(e)
       emitter.emit(SNACKBAR_ERROR, e.message)
