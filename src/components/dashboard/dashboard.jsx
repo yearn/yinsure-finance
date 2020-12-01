@@ -398,10 +398,11 @@ class Dashboard extends Component {
 
   onSwap = (contract) => {
     this.startLoading()
-    dispatcher.dispatch({ type: SWAP, content: { tokenId: contract.tokenIndex } })
+    dispatcher.dispatch({ type: SWAP, content: { contract } })
   }
 
   swapReturned = (swapResponse) => {
+    console.log({ swapResponse })
     this.stopLoading()
   }
 }

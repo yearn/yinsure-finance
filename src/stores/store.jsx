@@ -1,5 +1,6 @@
 import config from '../config'
 import async from 'async'
+import axios from 'axios'
 import {
   SNACKBAR_ERROR,
   SNACKBAR_TRANSACTION_RECEIPT,
@@ -762,8 +763,8 @@ class Store {
   swap = async (payload) => {
     try {
       const account = store.getStore('account')
-      const { tokenId } = payload.content
-      const data = await this._callSwap(tokenId, account)
+      const { contract } = payload.content
+      const data = await this._callSwap(contract, account)
       emitter.emit(SWAP_RETURNED, data)
     } catch (err) {
       emitter.emit(ERROR, err)
@@ -771,10 +772,25 @@ class Store {
     }
   }
 
-  _callSwap = async (tokenId, account) => {
-    // TODO: Swap functionality
-    console.log({ tokenId })
-    return 'ok'
+  _callSwap = async (contract) => {
+    try {
+      const account = store.getStore('account')
+      const web3 = this._getProvider()
+      const arNftV2Contract = new web3.eth.Contract(config.arNftV2ABI, config.arNftV2Address)
+      const gasPrice = (await axios(config.gasPriceAPI)).data.fast.toFixed(0)
+      const baseUrl = 'https://app.nexusmutual.io/cover/proof-of-loss/add-affected-addresses'
+      window.open(`${baseUrl}?coverId=${contract.coverId}&owner=${contract.address}`, '_blank')
+      const submitClaimResponse = await arNftV2Contract.methods.submitClaim(contract.coverId).send({
+        from: account.address,
+        value: '0',
+        gasPrice: web3.utils.toWei(gasPrice, 'gwei'),
+      })
+      return submitClaimResponse
+    } catch (e) {
+      console.error(e)
+      emitter.emit(SNACKBAR_ERROR, e.message)
+      return false
+    }
   }
 
   _checkApproval = async (asset, account, amount, contract, callback) => {
