@@ -3,6 +3,7 @@ import { withRouter } from 'react-router-dom'
 import { withStyles } from '@material-ui/core/styles'
 import * as moment from 'moment'
 import { Typography, Button } from '@material-ui/core'
+import Tooltip from '@material-ui/core/Tooltip'
 import { colors } from '../../theme'
 
 import Loader from '../loader'
@@ -317,17 +318,22 @@ class Dashboard extends Component {
               </Button>
             </div>
             {contract.coverStatus.status === '0' && (
-              <div className={classes.action}>
-                <Button
-                  variant="outlined"
-                  color="primary"
-                  onClick={() => {
-                    this.onClaim(contract.tokenIndex)
-                  }}
-                >
-                  <Typography variant={'h4'}>Claim</Typography>
-                </Button>
-              </div>
+              <Tooltip title={'You must swap before you can claim'} placement="top">
+                <span>
+                  <div className={classes.action}>
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      disabled={true}
+                      onClick={() => {
+                        this.onClaim(contract.tokenIndex)
+                      }}
+                    >
+                      <Typography variant={'h4'}>Claim</Typography>
+                    </Button>
+                  </div>
+                </span>
+              </Tooltip>
             )}
             {contract.coverStatus.finalVerdict !== '1' &&
               contract.coverStatus.finalVerdict !== '-1' &&
