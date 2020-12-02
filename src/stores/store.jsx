@@ -539,7 +539,7 @@ class Store {
   _callApply = async (amount, days, contract, asset, account, quote, callback) => {
     const web3 = this._getProvider()
 
-    let insuranceContract = new web3.eth.Contract(config.yInsureABI, config.yInsureAddress)
+    let insuranceContract = new web3.eth.Contract(config.arNftV2ABI, config.arNftV2Address)
 
     const coverDetails = [amount, quote.price, quote.priceInNXM, quote.expiresAt, quote.generatedAt]
 

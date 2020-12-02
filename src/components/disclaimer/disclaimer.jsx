@@ -53,10 +53,6 @@ class Disclaimer extends Component {
           onClick={() => window.location.assign('https://armor.fi')}
         >
           <div>This project is in beta. Use at your own risk.</div>
-          <div className={classes.poweredBy}>
-            Powered by Armor&nbsp;
-            <ArmorIcon width="16" height="16" />
-          </div>
         </Typography>
       </div>
     )
