@@ -1,5 +1,5 @@
 import config from '../config'
-import async from 'async'
+import async, { map as asyncMap } from 'async'
 import axios from 'axios'
 import {
   SNACKBAR_ERROR,
@@ -46,6 +46,24 @@ const Emitter = require('events').EventEmitter
 
 const dispatcher = new Dispatcher()
 const emitter = new Emitter()
+
+const NFT_CONTRACTS = {
+  arNFTv2: {
+    title: 'arNFT v2',
+    address: config.arNftV2Address,
+    abi: config.arNftV2ABI,
+  },
+  arNFTv1: {
+    title: 'arNFT v1',
+    address: config.arNftV1Address,
+    abi: config.arNftV1ABI,
+  },
+  yNFT: {
+    title: 'yNFT',
+    address: config.yInsureAddress,
+    abi: config.yInsureABI,
+  },
+}
 
 class Store {
   constructor() {
@@ -574,146 +592,242 @@ class Store {
       })
   }
 
-  getCover = async (payload) => {
+  async getCover(payload) {
+    const _arNftGetToken = async (insuranceContract, quotationContract, claimContract, account, web3, tokenIndex) => {
+      const tokenData = await insuranceContract.methods.getToken(tokenIndex).call({ from: account.address })
+
+      // console.log({ tokenData })
+      const { cid: coverId, scAddress, currencyCode, coverPrice, validUntil, sumAssured, claimId } = tokenData
+
+      const claimStatus = (
+        await quotationContract.methods.getscAddressOfCover(coverId).call({ from: account.address })
+      )[1]
+
+      const coverStatus = await claimContract.methods.getClaimbyIndex(claimId).call({ from: account.address })
+
+      return {
+        coverId,
+        tokenIndex,
+        address: scAddress,
+        claimStatus,
+        coverStatus,
+        coverCurrencyDisplay: web3.utils.hexToAscii(currencyCode),
+        coverPriceDisplay: web3.utils.fromWei(coverPrice, 'ether'),
+        expirationTimestamp: validUntil,
+        coverAmount: sumAssured,
+      }
+    }
+
+    const _yNftTokens = async (insuranceContract, quotationContract, claimContract, account, web3, tokenIndex) => {
+      const token = await insuranceContract.methods.tokens(tokenIndex).call({ from: account.address })
+
+      token.address = (
+        await quotationContract.methods.getscAddressOfCover(token.coverId).call({ from: account.address })
+      )[1]
+
+      token.coverStatus = await claimContract.methods.getClaimbyIndex(token.claimId).call({ from: account.address })
+
+      token.tokenIndex = tokenIndex
+      token.coverCurrencyDisplay = web3.utils.hexToAscii(token.coverCurrency)
+      token.coverPriceDisplay = web3.utils.fromWei(token.coverPrice, 'ether')
+
+      return token
+    }
+
     try {
       // console.log('GETTING COVER')
-      const web3 = this._getProvider()
+      const web3 = await this._getProvider()
       const account = store.getStore('account')
       const contracts = store.getStore('contracts')
+      const currentNftContract = store.getStore('currentNftContract')
 
       // console.log(account)
-      // console.log(contracts)
-      const insuranceContract = new web3.eth.Contract(config.yInsureABI, config.yInsureAddress)
-      const quotationContract = new web3.eth.Contract(config.quotationABI, config.quotationAddress)
-      const claimContract = new web3.eth.Contract(config.claimABI, config.claimAddress)
+      // console.log({ contracts })
+      const coverArr = []
+      for (let [contractName, contractData] of Object.entries(NFT_CONTRACTS)) {
+        try {
+          const insuranceContract = new web3.eth.Contract(contractData.abi, contractData.address)
+          // console.log({ contractName })
+          const quotationContract = new web3.eth.Contract(config.quotationABI, config.quotationAddress)
+          const claimContract = new web3.eth.Contract(config.claimABI, config.claimAddress)
 
-      // console.log(insuranceContract)
+          // console.log(insuranceContract)
 
-      const balanceOf = await insuranceContract.methods.balanceOf(account.address).call({ from: account.address })
+          const balanceOf = await insuranceContract.methods.balanceOf(account.address).call({ from: account.address })
 
-      // console.log(balanceOf)
-      if (balanceOf > 0) {
-        // console.log(Array.from(Array(parseInt(balanceOf)).keys()))
-        var arr = Array.from(Array(parseInt(balanceOf)).keys())
+          // console.log({ balanceOf, contractName, contractData })
+          if (balanceOf > 0) {
+            // console.log(Array.from(Array(parseInt(balanceOf)).keys()))
+            let arr = Array.from(Array(parseInt(balanceOf)).keys())
 
-        // console.log(arr)
-        async.map(
-          arr,
-          async (index, callback, c) => {
-            // console.log(index)
-            try {
-              const tokenIndex = await insuranceContract.methods
-                .tokenOfOwnerByIndex(account.address, index)
-                .call({ from: account.address })
-              // console.log(tokenIndex)
-              const token = await insuranceContract.methods.tokens(tokenIndex).call({ from: account.address })
-              // console.log(token)
-              let claimStatus = await claimContract.methods
-                .getClaimbyIndex(token.claimId)
-                .call({ from: account.address })
-              const address = await quotationContract.methods
-                .getscAddressOfCover(token.coverId)
-                .call({ from: account.address })
-              // console.log(address)
+            // console.log({ arr })
 
-              token.tokenIndex = tokenIndex
-              token.address = address[1]
-              token.coverStatus = claimStatus
-              token.coverCurrencyDisplay = web3.utils.hexToAscii(token.coverCurrency)
-              token.coverPriceDisplay = web3.utils.fromWei(token.coverPrice, 'ether')
+            const resultArr = await (async () => {
+              return new Promise((resolve, reject) => {
+                asyncMap(
+                  arr,
+                  async (index, callback, c) => {
+                    // console.log(index)
+                    try {
+                      const tokenIndex = await insuranceContract.methods
+                        .tokenOfOwnerByIndex(account.address, index)
+                        .call({ from: account.address })
+                      // console.log({ tokenIndex })
+                      // console.log({ contractName })
+                      const token = ['arNFTv1', 'arNFTv2'].includes(contractName)
+                        ? await _arNftGetToken(
+                            insuranceContract,
+                            quotationContract,
+                            claimContract,
+                            account,
+                            web3,
+                            tokenIndex
+                          )
+                        : await _yNftTokens(
+                            insuranceContract,
+                            quotationContract,
+                            claimContract,
+                            account,
+                            web3,
+                            tokenIndex
+                          )
+                      // console.log({ token })
+                      token.insuranceContractName = contractData.title
+                      token.insuranceContractAddress = contractData.address
 
-              let contractDetails = contracts.filter((contract) => {
-                return contract.address === token.address
+                      let contractDetails = contracts.filter((contract) => {
+                        return contract.address === token.address
+                      })
+
+                      // console.log(contractDetails)
+                      if (contractDetails.length > 0) {
+                        token.logo = contractDetails[0].logo
+                        token.name = contractDetails[0].name
+                      }
+
+                      if (callback) {
+                        callback(null, token)
+                      } else {
+                        return token
+                      }
+                    } catch (ex) {
+                      console.log(ex)
+                      if (callback) {
+                        callback(null, null)
+                      } else {
+                        return null
+                      }
+                    }
+                  },
+                  (err, data) => {
+                    if (err) reject(err)
+                    resolve(data)
+                  }
+                )
               })
+            })()
 
-              // console.log(contractDetails)
-              if (contractDetails.length > 0) {
-                token.logo = contractDetails[0].logo
-                token.name = contractDetails[0].name
-              }
-
-              // console.log(token)
-              if (callback) {
-                callback(null, token)
-              } else {
-                return token
-              }
-            } catch (ex) {
-              console.log(ex)
-              if (callback) {
-                callback(null, null)
-              } else {
-                return null
-              }
-            }
-          },
-          (err, data) => {
-            // console.log('RETURNED')
-            if (err) {
-              console.log(err)
-              emitter.emit(ERROR, err)
-              return emitter.emit(SNACKBAR_ERROR, err)
-            }
-
-            // console.log(data)
-            store.setStore({ cover: data })
-            emitter.emit(COVER_RETURNED, data)
+            coverArr.push(...resultArr)
           }
-        )
-      } else {
-        // console.log('No balance of here.')
-        store.setStore({ cover: [] })
-        emitter.emit(COVER_RETURNED, [])
+        } catch (coverError) {
+          // console.log({ coverError })
+          emitter.emit(ERROR, coverError)
+          emitter.emit(SNACKBAR_ERROR, coverError.message || coverError)
+        }
       }
+      // console.log({ coverArr })
+      store.setStore({ cover: coverArr })
+      emitter.emit(COVER_RETURNED, coverArr)
     } catch (ex) {
-      console.log(ex)
+      // console.log({ ex })
       emitter.emit(ERROR, ex)
       emitter.emit(SNACKBAR_ERROR, ex)
     }
   }
 
+  // claim = async (payload) => {
+  //   const account = store.getStore('account')
+  //   const { contractId } = payload.content
+
+  //   this._callClaim(contractId, account, (err, data) => {
+  //     if (err) {
+  //       emitter.emit(ERROR, err)
+  //       emitter.emit(SNACKBAR_ERROR, err)
+  //       return
+  //     }
+
+  //     emitter.emit(CLAIM_RETURNED, data)
+  //   })
+  // }
+
+  // _callClaim = async (contractId, account, callback) => {
+  //   const web3 = this._getProvider()
+
+  //   let insuranceContract = new web3.eth.Contract(config.yInsureABI, config.yInsureAddress)
+
+  //   insuranceContract.methods
+  //     .submitClaim(contractId)
+  //     .send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
+  //     .on('transactionHash', function (hash) {
+  //       callback(null, hash)
+  //     })
+  //     .on('confirmation', function (confirmationNumber, receipt) {
+  //       if (confirmationNumber === 2) {
+  //         emitter.emit(SNACKBAR_TRANSACTION_CONFIRMED, receipt.transactionHash)
+  //       }
+  //     })
+  //     .on('receipt', function (receipt) {
+  //       emitter.emit(SNACKBAR_TRANSACTION_RECEIPT, receipt.transactionHash)
+  //     })
+  //     .on('error', function (error) {
+  //       if (!error.toString().includes('-32601')) {
+  //         if (error.message) {
+  //           return callback(error.message)
+  //         }
+  //         callback(error)
+  //       }
+  //     })
+  // }
+
   claim = async (payload) => {
-    const account = store.getStore('account')
-    const { contractId } = payload.content
-
-    this._callClaim(contractId, account, (err, data) => {
-      if (err) {
-        emitter.emit(ERROR, err)
-        emitter.emit(SNACKBAR_ERROR, err)
-        return
+    try {
+      const account = store.getStore('account')
+      const { contract } = payload.content
+      if (!contract || !contract.coverId || !contract.address) {
+        console.log({ contract })
+        throw new Error('Something went wrong')
       }
-
+      const data = await this._callClaim(contract, account)
       emitter.emit(CLAIM_RETURNED, data)
-    })
+    } catch (err) {
+      emitter.emit(ERROR, err)
+      emitter.emit(SNACKBAR_ERROR, err)
+    }
   }
 
-  _callClaim = async (contractId, account, callback) => {
-    const web3 = this._getProvider()
+  _callClaim = async (contract, account) => {
+    try {
+      console.log({ contract, config })
+      const web3Context = store.getStore('web3context')
+      const web3 = new Web3(web3Context.library.provider)
+      const arNftContractInstance = new web3.eth.Contract(config.arNftV2ABI, config.arNftV2Address)
 
-    let insuranceContract = new web3.eth.Contract(config.yInsureABI, config.yInsureAddress)
+      const baseUrl = 'https://app.nexusmutual.io/cover/proof-of-loss/add-affected-addresses'
+      window.open(`${baseUrl}?coverId=${contract.coverId}&owner=${contract.address}`, '_blank')
 
-    insuranceContract.methods
-      .submitClaim(contractId)
-      .send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
-      .on('transactionHash', function (hash) {
-        callback(null, hash)
+      const gasPrice = (await axios(config.gasPriceAPI)).data.fast.toFixed(0)
+      const submitClaimResponse = await arNftContractInstance.methods.submitClaim(contract.coverId).send({
+        from: account.address,
+        value: '0',
+        gasPrice: web3.utils.toWei(gasPrice, 'gwei'),
       })
-      .on('confirmation', function (confirmationNumber, receipt) {
-        if (confirmationNumber === 2) {
-          emitter.emit(SNACKBAR_TRANSACTION_CONFIRMED, receipt.transactionHash)
-        }
-      })
-      .on('receipt', function (receipt) {
-        emitter.emit(SNACKBAR_TRANSACTION_RECEIPT, receipt.transactionHash)
-      })
-      .on('error', function (error) {
-        if (!error.toString().includes('-32601')) {
-          if (error.message) {
-            return callback(error.message)
-          }
-          callback(error)
-        }
-      })
+      console.log({ submitClaimResponse })
+      return submitClaimResponse
+    } catch (e) {
+      console.error(e)
+      emitter.emit(SNACKBAR_ERROR, e.message)
+      return false
+    }
   }
 
   redeem = async (payload) => {

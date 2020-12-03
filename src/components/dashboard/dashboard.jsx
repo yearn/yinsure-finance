@@ -86,6 +86,7 @@ const styles = (theme) => ({
     paddingBottom: '12px',
   },
   coverCard: {
+    position: 'relative',
     maxWidth: 'calc(100vw - 24px)',
     width: '100%',
     border: '1px solid ' + colors.borderBlue,
@@ -122,7 +123,7 @@ const styles = (theme) => ({
     display: 'flex',
     alignItems: 'center',
     width: '325px',
-    flex: 1,
+    // flex: 1,
     [theme.breakpoints.down('sm')]: {
       width: 'auto',
       flex: 1,
@@ -137,6 +138,18 @@ const styles = (theme) => ({
   },
   action: {
     width: '150px',
+  },
+  contractBadge: {
+    maxWidth: '80px',
+    width: '100%',
+    textAlign: 'center',
+    position: 'absolute',
+    top: '-10px',
+    right: '-10px',
+    background: '#2F80ED',
+    borderRadius: '10px',
+    color: '#fff',
+    cursor: 'default',
   },
 })
 
@@ -178,9 +191,11 @@ class Dashboard extends Component {
   }
 
   coverReturned = () => {
+    const _cover = store.getStore('cover')
+    console.log({ _cover })
     this.setState({
       loading: false,
-      cover: store.getStore('cover'),
+      cover: _cover,
     })
   }
 
@@ -305,36 +320,6 @@ class Dashboard extends Component {
                 {moment.unix(contract.expirationTimestamp).format('YYYY-MM-DD')}
               </Typography>
             </div>
-            <div className={classes.action}>
-              <Button
-                variant="outlined"
-                color="primary"
-                disabled={loading}
-                onClick={() => {
-                  this.onSwap(contract)
-                }}
-              >
-                <Typography variant={'h4'}>Swap</Typography>
-              </Button>
-            </div>
-            {contract.coverStatus.status === '0' && (
-              <Tooltip title={'You must swap before you can claim'} placement="top">
-                <span>
-                  <div className={classes.action}>
-                    <Button
-                      variant="outlined"
-                      color="primary"
-                      disabled={true}
-                      onClick={() => {
-                        this.onClaim(contract.tokenIndex)
-                      }}
-                    >
-                      <Typography variant={'h4'}>Claim</Typography>
-                    </Button>
-                  </div>
-                </span>
-              </Tooltip>
-            )}
             {contract.coverStatus.finalVerdict !== '1' &&
               contract.coverStatus.finalVerdict !== '-1' &&
               contract.coverStatus.status !== '0' && (
@@ -370,6 +355,54 @@ class Dashboard extends Component {
                 </Button>
               </div>
             )}
+
+            {contract.coverStatus.status === '0' && (
+              <>
+                {['arNFT v1', 'arNFT v2'].includes(contract.insuranceContractName) ? (
+                  <div className={classes.action}>
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      // disabled={true}
+                      onClick={() => {
+                        // this.onClaim(contract)
+                        window.location.assign('https://armor.fi/dashboard')
+                      }}
+                    >
+                      <Typography variant={'h4'}>Claim</Typography>
+                    </Button>
+                  </div>
+                ) : (
+                  <Tooltip title={'You must swap before you can claim'} placement="top">
+                    <span>
+                      <div className={classes.action}>
+                        <Button variant="outlined" color="primary" disabled={true}>
+                          <Typography variant={'h4'}>Claim</Typography>
+                        </Button>
+                      </div>
+                    </span>
+                  </Tooltip>
+                )}
+              </>
+            )}
+
+            {/* SHOW SWAP BUTTON FOR yNFT COVERS ONLY */}
+            {['yNFT'].includes(contract.insuranceContractName) && (
+              <div className={classes.action}>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  disabled={loading}
+                  onClick={() => {
+                    this.onSwap(contract)
+                  }}
+                >
+                  <Typography variant={'h4'}>Swap</Typography>
+                </Button>
+              </div>
+            )}
+
+            <div className={classes.contractBadge}>{contract.insuranceContractName}</div>
           </div>
         </div>
       )
@@ -392,9 +425,9 @@ class Dashboard extends Component {
     this.setState({ expanded: this.state.expanded === id ? null : id })
   }
 
-  onClaim = (contractId) => {
+  onClaim = (_contract) => {
     this.startLoading()
-    dispatcher.dispatch({ type: CLAIM, content: { contractId: contractId } })
+    dispatcher.dispatch({ type: CLAIM, content: { contract: _contract } })
   }
 
   onRedeem = (contractId) => {
