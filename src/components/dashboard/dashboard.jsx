@@ -20,6 +20,7 @@ import {
   REDEEM_RETURNED,
   SWAP,
   SWAP_RETURNED,
+  SNACKBAR_ERROR,
 } from '../../constants'
 
 import Store from '../../stores'
@@ -199,7 +200,8 @@ class Dashboard extends Component {
     })
   }
 
-  claimReturned = () => {
+  claimReturned = (claimResponse) => {
+    console.log({ claimResponse })
     this.stopLoading()
   }
 
@@ -365,8 +367,7 @@ class Dashboard extends Component {
                       color="primary"
                       // disabled={true}
                       onClick={() => {
-                        // this.onClaim(contract)
-                        window.location.assign('https://armor.fi/dashboard')
+                        this.onClaim(contract)
                       }}
                     >
                       <Typography variant={'h4'}>Claim</Typography>

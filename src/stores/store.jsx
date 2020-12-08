@@ -815,13 +815,12 @@ class Store {
       const baseUrl = 'https://app.nexusmutual.io/cover/proof-of-loss/add-affected-addresses'
       window.open(`${baseUrl}?coverId=${contract.coverId}&owner=${contract.address}`, '_blank')
 
-      const gasPrice = (await axios(config.gasPriceAPI)).data.fast.toFixed(0)
+      const gasPrice = await this._getGasPrice()
       const submitClaimResponse = await arNftContractInstance.methods.submitClaim(contract.coverId).send({
         from: account.address,
         value: '0',
         gasPrice: web3.utils.toWei(gasPrice, 'gwei'),
       })
-      console.log({ submitClaimResponse })
       return submitClaimResponse
     } catch (e) {
       console.error(e)
