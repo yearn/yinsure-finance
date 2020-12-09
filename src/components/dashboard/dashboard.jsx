@@ -1,11 +1,9 @@
-import React, { Component } from "react";
-import { withRouter } from "react-router-dom";
-import { withStyles } from '@material-ui/core/styles';
-import * as moment from 'moment';
-import {
-  Typography,
-  Button,
-} from '@material-ui/core';
+import React, { Component } from 'react'
+import { withRouter } from 'react-router-dom'
+import { withStyles } from '@material-ui/core/styles'
+import * as moment from 'moment'
+import { Typography, Button } from '@material-ui/core'
+import Tooltip from '@material-ui/core/Tooltip'
 import { colors } from '../../theme'
 
 import Loader from '../loader'
@@ -20,14 +18,17 @@ import {
   CLAIM_RETURNED,
   REDEEM,
   REDEEM_RETURNED,
+  SWAP,
+  SWAP_RETURNED,
+  SNACKBAR_ERROR,
 } from '../../constants'
 
-import Store from "../../stores";
+import Store from '../../stores'
 const emitter = Store.emitter
 const dispatcher = Store.dispatcher
 const store = Store.store
 
-const styles = theme => ({
+const styles = (theme) => ({
   root: {
     flex: 1,
     display: 'flex',
@@ -35,7 +36,7 @@ const styles = theme => ({
     maxWidth: '1200px',
     width: '100%',
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   investedContainerLoggedOut: {
     display: 'flex',
@@ -47,7 +48,7 @@ const styles = theme => ({
     marginTop: '40px',
     [theme.breakpoints.up('md')]: {
       minWidth: '900px',
-    }
+    },
   },
   investedContainer: {
     display: 'flex',
@@ -59,16 +60,16 @@ const styles = theme => ({
     marginTop: '40px',
     [theme.breakpoints.up('md')]: {
       minWidth: '900px',
-    }
+    },
   },
   introCenter: {
     maxWidth: '500px',
     textAlign: 'center',
     display: 'flex',
-    padding: '24px 0px'
+    padding: '24px 0px',
   },
   card: {
-    border: '1px solid '+colors.borderBlue,
+    border: '1px solid ' + colors.borderBlue,
     borderRadius: '50px',
     display: 'flex',
     background: colors.white,
@@ -76,23 +77,24 @@ const styles = theme => ({
     padding: '42px 30px',
   },
   grey: {
-    color: colors.darkGray
+    color: colors.darkGray,
   },
   title: {
     display: 'flex',
     width: '100%',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingBottom: '12px'
+    paddingBottom: '12px',
   },
   coverCard: {
+    position: 'relative',
     maxWidth: 'calc(100vw - 24px)',
     width: '100%',
-    border: '1px solid '+colors.borderBlue,
+    border: '1px solid ' + colors.borderBlue,
     background: colors.white,
     borderRadius: '50px',
     padding: '30px',
-    marginBottom: '12px'
+    marginBottom: '12px',
   },
   assetSummary: {
     display: 'flex',
@@ -100,8 +102,8 @@ const styles = theme => ({
     flex: 1,
     flexWrap: 'wrap',
     [theme.breakpoints.up('sm')]: {
-      flexWrap: 'nowrap'
-    }
+      flexWrap: 'nowrap',
+    },
   },
   assetIcon: {
     display: 'flex',
@@ -116,32 +118,43 @@ const styles = theme => ({
       height: '40px',
       width: '40px',
       marginRight: '24px',
-    }
+    },
   },
   headingName: {
     display: 'flex',
     alignItems: 'center',
     width: '325px',
-    flex: 1,
+    // flex: 1,
     [theme.breakpoints.down('sm')]: {
       width: 'auto',
-      flex: 1
-    }
+      flex: 1,
+    },
   },
   heading: {
     display: 'none',
     [theme.breakpoints.up('md')]: {
       display: 'block',
-      width: '180px'
-    }
+      width: '180px',
+    },
   },
   action: {
-    width: '150px'
-  }
-});
+    width: '150px',
+  },
+  contractBadge: {
+    maxWidth: '80px',
+    width: '100%',
+    textAlign: 'center',
+    position: 'absolute',
+    top: '-10px',
+    right: '-10px',
+    background: '#2F80ED',
+    borderRadius: '10px',
+    color: '#fff',
+    cursor: 'default',
+  },
+})
 
 class Dashboard extends Component {
-
   constructor(props) {
     super()
 
@@ -151,39 +164,44 @@ class Dashboard extends Component {
     this.state = {
       account: account,
       cover: cover,
-      loading: cover ? false : true
+      loading: cover ? false : true,
     }
 
-    if(account && account.address) {
+    if (account && account.address) {
       dispatcher.dispatch({ type: GET_COVER, content: {} })
     }
   }
   componentWillMount() {
-    emitter.on(ERROR, this.errorReturned);
-    emitter.on(CONNECTION_DISCONNECTED, this.connectionDisconnected);
-    emitter.on(CONNECTION_CONNECTED, this.connectionConnected);
-    emitter.on(COVER_RETURNED, this.coverReturned);
-    emitter.on(CLAIM_RETURNED, this.claimReturned);
-    emitter.on(REDEEM_RETURNED, this.redeemReturned);
+    emitter.on(ERROR, this.errorReturned)
+    emitter.on(CONNECTION_DISCONNECTED, this.connectionDisconnected)
+    emitter.on(CONNECTION_CONNECTED, this.connectionConnected)
+    emitter.on(COVER_RETURNED, this.coverReturned)
+    emitter.on(CLAIM_RETURNED, this.claimReturned)
+    emitter.on(REDEEM_RETURNED, this.redeemReturned)
+    emitter.on(SWAP_RETURNED, this.swapReturned)
   }
 
   componentWillUnmount() {
-    emitter.removeListener(ERROR, this.errorReturned);
-    emitter.removeListener(CONNECTION_CONNECTED, this.connectionConnected);
-    emitter.removeListener(CONNECTION_DISCONNECTED, this.connectionDisconnected);
-    emitter.removeListener(COVER_RETURNED, this.coverReturned);
-    emitter.removeListener(CLAIM_RETURNED, this.claimReturned);
-    emitter.removeListener(REDEEM_RETURNED, this.redeemReturned);
-  };
+    emitter.removeListener(ERROR, this.errorReturned)
+    emitter.removeListener(CONNECTION_CONNECTED, this.connectionConnected)
+    emitter.removeListener(CONNECTION_DISCONNECTED, this.connectionDisconnected)
+    emitter.removeListener(COVER_RETURNED, this.coverReturned)
+    emitter.removeListener(CLAIM_RETURNED, this.claimReturned)
+    emitter.removeListener(REDEEM_RETURNED, this.redeemReturned)
+    emitter.removeListener(SWAP_RETURNED, this.swapReturned)
+  }
 
   coverReturned = () => {
+    const _cover = store.getStore('cover')
+    console.log({ _cover })
     this.setState({
       loading: false,
-      cover: store.getStore('cover')
+      cover: _cover,
     })
   }
 
-  claimReturned = () => {
+  claimReturned = (claimResponse) => {
+    console.log({ claimResponse })
     this.stopLoading()
   }
 
@@ -195,7 +213,7 @@ class Dashboard extends Component {
     this.setState({ account: store.getStore('account') })
 
     dispatcher.dispatch({ type: GET_COVER, content: {} })
-  };
+  }
 
   connectionDisconnected = () => {
     this.setState({ account: null })
@@ -203,21 +221,18 @@ class Dashboard extends Component {
 
   errorReturned = (error) => {
     this.setState({ loading: false })
-  };
+  }
 
   render() {
-    const { classes } = this.props;
-    const {
-      loading,
-      account,
-    } = this.state
+    const { classes } = this.props
+    const { loading, account } = this.state
 
-    if(!account || !account.address) {
+    if (!account || !account.address) {
       return (
-        <div className={ classes.root }>
-          <div className={ classes.investedContainerLoggedOut }>
-            <div className={ classes.introCenter }>
-              <Typography variant='h3'>Connect your wallet to continue</Typography>
+        <div className={classes.root}>
+          <div className={classes.investedContainerLoggedOut}>
+            <div className={classes.introCenter}>
+              <Typography variant="h3">Connect your wallet to continue</Typography>
             </div>
           </div>
         </div>
@@ -225,111 +240,170 @@ class Dashboard extends Component {
     }
 
     return (
-      <div className={ classes.root }>
-        <div className={ classes.investedContainer }>
-          <div className={ classes.title }>
-            <Typography variant='h3' className={ classes.grey }>Your cover</Typography>
+      <div className={classes.root}>
+        <div className={classes.investedContainer}>
+          <div className={classes.title}>
+            <Typography variant="h3" className={classes.grey}>
+              Your cover
+            </Typography>
             <Button
-              variant='contained'
+              variant="contained"
               color="primary"
-              onClick={ () => { this.nav('add') } }>
+              onClick={() => {
+                this.nav('add')
+              }}
+            >
               <Typography variant={'h4'}>Add Cover</Typography>
             </Button>
           </div>
-          { this.renderCover() }
+          {this.renderCover()}
         </div>
-        { loading && <Loader /> }
+        {loading && <Loader />}
       </div>
     )
-  };
+  }
 
   renderCover = () => {
-    const { cover } = this.state
+    const { cover, loading } = this.state
     const { classes } = this.props
     const width = window.innerWidth
 
-    if(!cover) {
-      return (
-        <Typography variant={'h4'}>Loading your cover ...</Typography>
-      )
+    if (!cover) {
+      return <Typography variant={'h4'}>Loading your cover ...</Typography>
     }
 
-    if(cover.length === 0) {
-      return (
-        <Typography variant={'h4'}>You don't have any cover yet</Typography>
-      )
+    if (cover.length === 0) {
+      return <Typography variant={'h4'}>You don't have any cover yet</Typography>
     }
-
 
     return cover.map((contract) => {
-      var address = null;
+      var address = null
 
-      if(!contract) {
+      if (!contract) {
         return null
       }
 
       if (contract.address) {
-        address = contract.address.substring(0,10)+'...'+contract.address.substring(contract.address.length-8,contract.address.length)
+        address =
+          contract.address.substring(0, 10) +
+          '...' +
+          contract.address.substring(contract.address.length - 8, contract.address.length)
       }
 
       return (
-        <div className={ classes.coverCard } key={ contract.tokenIndex } >
-          <div className={ classes.assetSummary }>
+        <div className={classes.coverCard} key={contract.tokenIndex}>
+          <div className={classes.assetSummary}>
             <div className={classes.headingName}>
-              <div className={ classes.assetIcon }>
-                <img
-                  alt=""
-                  src={ require('../../assets/'+contract.logo) }
-                  height={ width > 600 ? '40px' : '30px'}
-                />
+              <div className={classes.assetIcon}>
+                <img alt="" src={require('../../assets/' + contract.logo)} height={width > 600 ? '40px' : '30px'} />
               </div>
               <div>
-                <Typography variant={ 'h3' } noWrap>{ contract.name }</Typography>
-                <Typography variant={ 'h5' } className={ classes.grey }>{ address }</Typography>
+                <Typography variant={'h3'} noWrap>
+                  {contract.name}
+                </Typography>
+                <Typography variant={'h5'} className={classes.grey}>
+                  {address}
+                </Typography>
               </div>
             </div>
             <div className={classes.heading}>
-              <Typography variant={ 'h5' } className={ classes.grey }>Cover Purchased</Typography>
-              <Typography variant={ 'h3' } noWrap>{ contract.coverAmount } { contract.coverCurrencyDisplay }</Typography>
+              <Typography variant={'h5'} className={classes.grey}>
+                Cover Purchased
+              </Typography>
+              <Typography variant={'h3'} noWrap>
+                {contract.coverAmount} {contract.coverCurrencyDisplay}
+              </Typography>
             </div>
             <div className={classes.heading}>
-              <Typography variant={ 'h5' } className={ classes.grey }>Cover Expires</Typography>
-              <Typography variant={ 'h3' } noWrap>{ moment.unix(contract.expirationTimestamp).format('YYYY-MM-DD') }</Typography>
+              <Typography variant={'h5'} className={classes.grey}>
+                Cover Expires
+              </Typography>
+              <Typography variant={'h3'} noWrap>
+                {moment.unix(contract.expirationTimestamp).format('YYYY-MM-DD')}
+              </Typography>
             </div>
-            { contract.coverStatus.status === '0' &&
+            {contract.coverStatus.finalVerdict !== '1' &&
+              contract.coverStatus.finalVerdict !== '-1' &&
+              contract.coverStatus.status !== '0' && (
+                <div className={classes.action}>
+                  <Typography variant={'h5'} className={classes.grey}>
+                    Status
+                  </Typography>
+                  <Typography variant={'h3'} noWrap>
+                    Pending
+                  </Typography>
+                </div>
+              )}
+            {contract.coverStatus.finalVerdict === '-1' && (
+              <div className={classes.action}>
+                <Typography variant={'h5'} className={classes.grey}>
+                  Status
+                </Typography>
+                <Typography variant={'h3'} noWrap>
+                  Rejected
+                </Typography>
+              </div>
+            )}
+            {contract.coverStatus.finalVerdict === '1' && (
               <div className={classes.action}>
                 <Button
-                  variant='outlined'
+                  variant="outlined"
                   color="primary"
-                  onClick={ () => { this.onClaim(contract.tokenIndex) } }>
-                  <Typography variant={'h4'}>Claim</Typography>
-                </Button>
-              </div>
-            }
-            { contract.coverStatus.finalVerdict !== '1' && contract.coverStatus.finalVerdict !== '-1' && contract.coverStatus.status !== '0' &&
-              <div className={classes.action}>
-                <Typography variant={ 'h5' } className={ classes.grey }>Status</Typography>
-                <Typography variant={ 'h3' } noWrap>Pending</Typography>
-              </div>
-            }
-            {
-              (contract.coverStatus.finalVerdict === '-1') &&
-              <div className={classes.action}>
-                <Typography variant={ 'h5' } className={ classes.grey }>Status</Typography>
-                <Typography variant={ 'h3' } noWrap>Rejected</Typography>
-              </div>
-            }
-            {
-              (contract.coverStatus.finalVerdict === '1') &&
-              <div className={classes.action}>
-                <Button
-                  variant='outlined'
-                  color="primary"
-                  onClick={ () => { this.onRedeem(contract.tokenIndex) } }>
+                  onClick={() => {
+                    this.onRedeem(contract.tokenIndex)
+                  }}
+                >
                   <Typography variant={'h4'}>Redeem</Typography>
                 </Button>
               </div>
-            }
+            )}
+
+            {contract.coverStatus.status === '0' && (
+              <>
+                {['arNFT v1', 'arNFT v2'].includes(contract.insuranceContractName) ? (
+                  <div className={classes.action}>
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      // disabled={true}
+                      onClick={() => {
+                        this.onClaim(contract)
+                      }}
+                    >
+                      <Typography variant={'h4'}>Claim</Typography>
+                    </Button>
+                  </div>
+                ) : (
+                  <Tooltip title={'You must swap before you can claim'} placement="top">
+                    <span>
+                      <div className={classes.action}>
+                        <Button variant="outlined" color="primary" disabled={true}>
+                          <Typography variant={'h4'}>Claim</Typography>
+                        </Button>
+                      </div>
+                    </span>
+                  </Tooltip>
+                )}
+              </>
+            )}
+
+            {/* SHOW SWAP BUTTON FOR yNFT COVERS ONLY */}
+            {['yNFT'].includes(contract.insuranceContractName) && (
+              <div className={classes.action}>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  disabled={loading}
+                  onClick={() => {
+                    this.onSwap(contract)
+                  }}
+                >
+                  <Typography variant={'h4'}>Swap</Typography>
+                </Button>
+              </div>
+            )}
+
+            <div className={classes.contractBadge}>{contract.insuranceContractName}</div>
           </div>
         </div>
       )
@@ -337,7 +411,7 @@ class Dashboard extends Component {
   }
 
   nav = (screen) => {
-    this.props.history.push('/'+screen)
+    this.props.history.push('/' + screen)
   }
 
   startLoading = () => {
@@ -352,15 +426,25 @@ class Dashboard extends Component {
     this.setState({ expanded: this.state.expanded === id ? null : id })
   }
 
-  onClaim = (contractId) => {
+  onClaim = (_contract) => {
     this.startLoading()
-    dispatcher.dispatch({ type: CLAIM, content: { contractId: contractId } })
+    dispatcher.dispatch({ type: CLAIM, content: { contract: _contract } })
   }
 
   onRedeem = (contractId) => {
     this.startLoading()
     dispatcher.dispatch({ type: REDEEM, content: { contractId: contractId } })
   }
+
+  onSwap = (contract) => {
+    this.startLoading()
+    dispatcher.dispatch({ type: SWAP, content: { contract } })
+  }
+
+  swapReturned = (swapResponse) => {
+    console.log({ swapResponse })
+    this.stopLoading()
+  }
 }
 
-export default withRouter(withStyles(styles)(Dashboard));
+export default withRouter(withStyles(styles)(Dashboard))
