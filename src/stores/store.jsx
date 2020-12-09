@@ -1,5 +1,6 @@
-import config from "../config";
-import async from 'async';
+import config from '../config'
+import async, { map as asyncMap } from 'async'
+import axios from 'axios'
 import {
   SNACKBAR_ERROR,
   SNACKBAR_TRANSACTION_RECEIPT,
@@ -18,9 +19,11 @@ import {
   CLAIM,
   CLAIM_RETURNED,
   REDEEM,
-  REDEEM_RETURNED
-} from '../constants';
-import Web3 from 'web3';
+  REDEEM_RETURNED,
+  SWAP,
+  SWAP_RETURNED,
+} from '../constants'
+import Web3 from 'web3'
 
 import {
   injected,
@@ -33,20 +36,37 @@ import {
   portis,
   squarelink,
   torus,
-  authereum
-} from "./connectors";
+  authereum,
+} from './connectors'
 
-const rp = require('request-promise');
+const rp = require('request-promise')
 
-const Dispatcher = require('flux').Dispatcher;
-const Emitter = require('events').EventEmitter;
+const Dispatcher = require('flux').Dispatcher
+const Emitter = require('events').EventEmitter
 
-const dispatcher = new Dispatcher();
-const emitter = new Emitter();
+const dispatcher = new Dispatcher()
+const emitter = new Emitter()
+
+const NFT_CONTRACTS = {
+  arNFTv2: {
+    title: 'arNFT v2',
+    address: config.arNftV2Address,
+    abi: config.arNftV2ABI,
+  },
+  arNFTv1: {
+    title: 'arNFT v1',
+    address: config.arNftV1Address,
+    abi: config.arNftV1ABI,
+  },
+  yNFT: {
+    title: 'yNFT',
+    address: config.yInsureAddress,
+    abi: config.yInsureABI,
+  },
+}
 
 class Store {
   constructor() {
-
     this.store = {
       universalGasPrice: '70',
       account: {},
@@ -62,36 +82,36 @@ class Store {
         Portis: portis,
         Squarelink: squarelink,
         Torus: torus,
-        Authereum: authereum
+        Authereum: authereum,
       },
       web3context: null,
       ethBalance: 0,
       cover: null,
       balances: [
         {
-          id: "eth",
-          name: "Ether",
-          address: "Ethereum",
-          symbol: "ETH",
-          logo: "ETH-logo.png",
+          id: 'eth',
+          name: 'Ether',
+          address: 'Ethereum',
+          symbol: 'ETH',
+          logo: 'ETH-logo.png',
           description: 'Ethereum',
           decimals: 18,
-          balance: 0
+          balance: 0,
         },
         {
-          id: "dai",
-          name: "DAI",
-          address: "0x6b175474e89094c44da98b954eedeac495271d0f",
-          symbol: "DAI",
-          logo: "DAI-logo.png",
+          id: 'dai',
+          name: 'DAI',
+          address: '0x6b175474e89094c44da98b954eedeac495271d0f',
+          symbol: 'DAI',
+          logo: 'DAI-logo.png',
           description: 'DAI Stablecoin',
           decimals: 18,
-          balance: 0
-        }
+          balance: 0,
+        },
       ],
       contracts: [
         {
-          id: "yfi",
+          id: 'yfi',
           name: 'yearn.finance',
           address: '0x9D25057e62939D3408406975aD75Ffe834DA4cDd',
           symbol: 'YFI',
@@ -102,11 +122,11 @@ class Store {
           capacity: {
             capacityETH: 0,
             capacityDAI: 0,
-            netStakedNXM: 0
-          }
+            netStakedNXM: 0,
+          },
         },
         {
-          id: "AAVE",
+          id: 'AAVE',
           name: 'Aave',
           address: '0xc1D2819CE78f3E15Ee69c6738eB1B400A26e632A',
           symbol: 'LEND',
@@ -117,11 +137,11 @@ class Store {
           capacity: {
             capacityETH: 0,
             capacityDAI: 0,
-            netStakedNXM: 0
-          }
+            netStakedNXM: 0,
+          },
         },
         {
-          id: "bal",
+          id: 'bal',
           name: 'Balancer',
           address: '0x9424B1412450D0f8Fc2255FAf6046b98213B76Bd',
           symbol: 'BAL',
@@ -132,11 +152,11 @@ class Store {
           capacity: {
             capacityETH: 0,
             capacityDAI: 0,
-            netStakedNXM: 0
-          }
+            netStakedNXM: 0,
+          },
         },
         {
-          id: "comp",
+          id: 'comp',
           name: 'Compound',
           address: '0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B',
           symbol: 'COMP',
@@ -147,11 +167,11 @@ class Store {
           capacity: {
             capacityETH: 0,
             capacityDAI: 0,
-            netStakedNXM: 0
-          }
+            netStakedNXM: 0,
+          },
         },
         {
-          id: "crv",
+          id: 'crv',
           name: 'Curve',
           address: '0x79a8C46DeA5aDa233ABaFFD40F3A0A2B1e5A4F27',
           symbol: 'CRV',
@@ -162,11 +182,11 @@ class Store {
           capacity: {
             capacityETH: 0,
             capacityDAI: 0,
-            netStakedNXM: 0
-          }
+            netStakedNXM: 0,
+          },
         },
         {
-          id: "dforce",
+          id: 'dforce',
           name: 'dforce',
           address: '0x02285AcaafEB533e03A7306C55EC031297df9224',
           symbol: 'DF',
@@ -177,11 +197,11 @@ class Store {
           capacity: {
             capacityETH: 0,
             capacityDAI: 0,
-            netStakedNXM: 0
-          }
+            netStakedNXM: 0,
+          },
         },
         {
-          id: "mstable",
+          id: 'mstable',
           name: 'mstable',
           address: '0xAFcE80b19A8cE13DEc0739a1aaB7A028d6845Eb3',
           symbol: 'MUSD',
@@ -192,11 +212,11 @@ class Store {
           capacity: {
             capacityETH: 0,
             capacityDAI: 0,
-            netStakedNXM: 0
-          }
+            netStakedNXM: 0,
+          },
         },
         {
-          id: "opyn",
+          id: 'opyn',
           name: 'opyn',
           address: '0xb529964F86fbf99a6aA67f72a27e59fA3fa4FEaC',
           symbol: 'opyn',
@@ -207,11 +227,11 @@ class Store {
           capacity: {
             capacityETH: 0,
             capacityDAI: 0,
-            netStakedNXM: 0
-          }
+            netStakedNXM: 0,
+          },
         },
         {
-          id: "snx",
+          id: 'snx',
           name: 'SynthetiX',
           address: '0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F',
           symbol: 'SNX',
@@ -222,11 +242,11 @@ class Store {
           capacity: {
             capacityETH: 0,
             capacityDAI: 0,
-            netStakedNXM: 0
-          }
+            netStakedNXM: 0,
+          },
         },
         {
-          id: "uma",
+          id: 'uma',
           name: 'UMA',
           address: '0x3e532e6222afe9Bcf02DCB87216802c75D5113aE',
           symbol: 'UMA',
@@ -237,11 +257,11 @@ class Store {
           capacity: {
             capacityETH: 0,
             capacityDAI: 0,
-            netStakedNXM: 0
-          }
+            netStakedNXM: 0,
+          },
         },
         {
-          id: "uniswap",
+          id: 'uniswap',
           name: 'Uniswap V2',
           address: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
           symbol: 'UNI',
@@ -252,93 +272,105 @@ class Store {
           capacity: {
             capacityETH: 0,
             capacityDAI: 0,
-            netStakedNXM: 0
-          }
+            netStakedNXM: 0,
+          },
         },
-      ]
+      ],
     }
 
     dispatcher.register(
       function (payload) {
         switch (payload.type) {
           case GET_ACCOUNT_BALANCES:
-            this.getAccountBalances(payload);
-            break;
+            this.getAccountBalances(payload)
+            break
           case GET_CONTRACT_BALANCES:
-            this.getContractBalances(payload);
-            break;
+            this.getContractBalances(payload)
+            break
           case GET_QUOTE:
-            this.getQuote(payload);
-            break;
+            this.getQuote(payload)
+            break
           case APPLY:
-            this.apply(payload);
-            break;
+            this.apply(payload)
+            break
           case GET_COVER:
-            this.getCover(payload);
-            break;
+            this.getCover(payload)
+            break
           case CLAIM:
-            this.claim(payload);
-            break;
+            this.claim(payload)
+            break
           case REDEEM:
-            this.redeem(payload);
-            break;
+            this.redeem(payload)
+            break
+          case SWAP:
+            this.swap(payload)
+            break
           default: {
           }
         }
       }.bind(this)
-    );
+    )
   }
 
   getStore(index) {
-    return(this.store[index]);
-  };
+    return this.store[index]
+  }
 
   setStore(obj) {
-    this.store = {...this.store, ...obj}
+    this.store = { ...this.store, ...obj }
     // console.log(this.store)
-    return emitter.emit('StoreUpdated');
-  };
+    return emitter.emit('StoreUpdated')
+  }
 
   getAccountBalances = async (payload) => {
     const account = store.getStore('account')
     const balances = store.getStore('balances')
 
-    if(!account || !account.address) {
+    if (!account || !account.address) {
       return false
     }
 
-    const web3 = await this._getProvider();
+    const web3 = await this._getProvider()
 
-    async.map(balances, (balance, callback) => {
-      async.parallel([
-        (callbackInner) => { this._getERC20Balance(web3, balance, account, callbackInner) },
-      ], (err, data) => {
-        balance.balance = data[0]
+    async.map(
+      balances,
+      (balance, callback) => {
+        async.parallel(
+          [
+            (callbackInner) => {
+              this._getERC20Balance(web3, balance, account, callbackInner)
+            },
+          ],
+          (err, data) => {
+            balance.balance = data[0]
 
-        callback(null, balance)
-      })
-    }, (err, balanceData) => {
-      if(err) {
-        emitter.emit(ERROR, err)
-        emitter.emit(SNACKBAR_ERROR, err)
-        return
+            callback(null, balance)
+          }
+        )
+      },
+      (err, balanceData) => {
+        if (err) {
+          emitter.emit(ERROR, err)
+          emitter.emit(SNACKBAR_ERROR, err)
+          return
+        }
+
+        store.setStore({ balances: balanceData })
+        emitter.emit(ACCOUNT_BALANCES_RETURNED)
       }
-
-      store.setStore({ balances: balanceData })
-      emitter.emit(ACCOUNT_BALANCES_RETURNED)
-    })
+    )
   }
 
   getContractBalances = async (payload) => {
     const account = store.getStore('account')
     const contracts = store.getStore('contracts')
 
-    if(!account || !account.address) {
+    if (!account || !account.address) {
       return false
     }
 
     this._getCapacities((err, capacities) => {
-      if(err) {
+      if (err) {
         emitter.emit(ERROR)
         emitter.emit(SNACKBAR_ERROR)
         return
@@ -349,13 +381,13 @@ class Store {
           return capacity.contractAddress.toLowerCase() === contract.address.toLowerCase()
         })
 
-        if(capacity.length > 0) {
+        if (capacity.length > 0) {
           contract.capacity = capacity[0]
         } else {
           contract.capacity = {
             capacityETH: 0,
             capacityDAI: 0,
-            netStakedNXM: 0
+            netStakedNXM: 0,
           }
         }
 
@@ -365,7 +397,6 @@ class Store {
       store.setStore({ contracts: contractData })
       emitter.emit(CONTRACT_BALANCES_RETURNED)
     })
-
 
     // async.map(contracts, (contract, callback) => {
     //   async.parallel([
@@ -391,35 +422,35 @@ class Store {
 
   _getERC20Balance = async (web3, contract, account, callback) => {
     try {
-      if(contract.address === 'Ethereum') {
-        const eth_balance = web3.utils.fromWei(await web3.eth.getBalance(account.address), "ether");
+      if (contract.address === 'Ethereum') {
+        const eth_balance = web3.utils.fromWei(await web3.eth.getBalance(account.address), 'ether')
         callback(null, parseFloat(eth_balance))
       } else {
         const erc20Contract = new web3.eth.Contract(config.erc20ABI, contract.address)
-        let balance = await erc20Contract.methods.balanceOf(account.address).call({ from: account.address });
-        balance = parseFloat(balance)/10**contract.decimals
+        let balance = await erc20Contract.methods.balanceOf(account.address).call({ from: account.address })
+        balance = parseFloat(balance) / 10 ** contract.decimals
         callback(null, parseFloat(balance))
       }
-    } catch(ex) {
+    } catch (ex) {
       return callback(ex)
     }
   }
 
   _getCapacities = async (callback) => {
     try {
-      const url = config.nexusMutualAPI+`v1/capacities`
+      const url = config.nexusMutualAPI + `v1/capacities`
 
       const options = {
         uri: url,
         headers: {
-          'x-api-key': config.nexusMutualKey
+          'x-api-key': config.nexusMutualKey,
         },
-        json: true
+        json: true,
       }
 
-      const capacityJSON = await rp(options);
+      const capacityJSON = await rp(options)
       callback(null, capacityJSON)
-    } catch(e) {
+    } catch (e) {
       console.log(e)
       return callback(null, [])
     }
@@ -427,25 +458,25 @@ class Store {
 
   _getContractCapacity = async (contract, callback) => {
     try {
-      const url = config.nexusMutualAPI+`v1/contracts/${contract.address}/capacity`
+      const url = config.nexusMutualAPI + `v1/contracts/${contract.address}/capacity`
 
       const options = {
         uri: url,
         headers: {
-          'x-api-key': config.nexusMutualKey
+          'x-api-key': config.nexusMutualKey,
         },
-        json: true
+        json: true,
       }
 
-      const capacityJSON = await rp(options);
+      const capacityJSON = await rp(options)
       callback(null, capacityJSON)
-    } catch(e) {
+    } catch (e) {
       console.log(e)
-      if(e && e.error && e.error.reason === "Uncoverable") {
+      if (e && e.error && e.error.reason === 'Uncoverable') {
         return callback(null, {
           capacityETH: 0,
           capacityDAI: 0,
-          netStakedNXM: 0
+          netStakedNXM: 0,
         })
       }
       return callback(null, {})
@@ -453,11 +484,10 @@ class Store {
   }
 
   getQuote = async (payload) => {
-
     const { amount, days, contract, asset } = payload.content
 
     this._getQuote(amount, days, contract, asset, (err, data) => {
-      if(err) {
+      if (err) {
         emitter.emit(ERROR, err)
         emitter.emit(SNACKBAR_ERROR, err)
         return
@@ -469,39 +499,40 @@ class Store {
 
   _getQuote = async (amount, days, contract, asset, callback) => {
     try {
-      const url = config.nexusMutualAPI+`v1/quote?coverAmount=${amount}&currency=${asset.symbol}&period=${days}&contractAddress=${contract.address}`
+      const url =
+        config.nexusMutualAPI +
+        `v1/quote?coverAmount=${amount}&currency=${asset.symbol}&period=${days}&contractAddress=${contract.address}`
       // const url = config.nexusMutualAPI+`getQuote/${amount}/${asset.symbol}/${days}/${contract.address}/M1`
 
       const options = {
         uri: url,
         headers: {
-          'x-api-key': config.nexusMutualKey
+          'x-api-key': config.nexusMutualKey,
         },
-        json: true
+        json: true,
       }
 
-      const quoteJSON = await rp(options);
+      const quoteJSON = await rp(options)
       // console.log(quoteJSON);
       callback(null, quoteJSON)
-    } catch(e) {
+    } catch (e) {
       console.log(e)
       return callback(e)
     }
   }
 
   apply = async (payload) => {
-
     const account = store.getStore('account')
     const { amount, days, contract, asset, quote } = payload.content
 
-    if( asset.id === 'dai' ) {
+    if (asset.id === 'dai') {
       this._checkApproval(asset, account, amount, config.yInsureAddress, (err) => {
-        if(err) {
-          return emitter.emit(ERROR, err);
+        if (err) {
+          return emitter.emit(ERROR, err)
         }
 
         this._callApply(amount, days, contract, asset, account, quote, (err, data) => {
-          if(err) {
+          if (err) {
             emitter.emit(ERROR, err)
             emitter.emit(SNACKBAR_ERROR, err)
             return
@@ -512,7 +543,7 @@ class Store {
       })
     } else {
       this._callApply(amount, days, contract, asset, account, quote, (err, data) => {
-        if(err) {
+        if (err) {
           emitter.emit(ERROR, err)
           emitter.emit(SNACKBAR_ERROR, err)
           return
@@ -526,170 +557,276 @@ class Store {
   _callApply = async (amount, days, contract, asset, account, quote, callback) => {
     const web3 = this._getProvider()
 
-    let insuranceContract = new web3.eth.Contract(config.yInsureABI, config.yInsureAddress)
+    let insuranceContract = new web3.eth.Contract(config.arNftV2ABI, config.arNftV2Address)
 
     const coverDetails = [amount, quote.price, quote.priceInNXM, quote.expiresAt, quote.generatedAt]
 
     const sendSymbol = web3.utils.asciiToHex(asset.symbol)
 
     let sendValue = undefined
-    if(asset.symbol === 'ETH') {
+    if (asset.symbol === 'ETH') {
       sendValue = quote.price
     }
 
-    insuranceContract.methods.buyCover(contract.address, sendSymbol, coverDetails, days, quote.v, quote.r, quote.s).send({ from: account.address, value: sendValue, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
-    .on('transactionHash', function(hash){
-      callback(null, hash)
-    })
-    .on('confirmation', function(confirmationNumber, receipt){
-      if(confirmationNumber === 2) {
-        emitter.emit(SNACKBAR_TRANSACTION_CONFIRMED, receipt.transactionHash)
-      }
-    })
-    .on('receipt', function(receipt){
-      emitter.emit(SNACKBAR_TRANSACTION_RECEIPT, receipt.transactionHash)
-    })
-    .on('error', function(error) {
-      if (!error.toString().includes("-32601")) {
-        if(error.message) {
-          return callback(error.message)
+    insuranceContract.methods
+      .buyCover(contract.address, sendSymbol, coverDetails, days, quote.v, quote.r, quote.s)
+      .send({ from: account.address, value: sendValue, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
+      .on('transactionHash', function (hash) {
+        callback(null, hash)
+      })
+      .on('confirmation', function (confirmationNumber, receipt) {
+        if (confirmationNumber === 2) {
+          emitter.emit(SNACKBAR_TRANSACTION_CONFIRMED, receipt.transactionHash)
         }
-        callback(error)
-      }
-    })
+      })
+      .on('receipt', function (receipt) {
+        emitter.emit(SNACKBAR_TRANSACTION_RECEIPT, receipt.transactionHash)
+      })
+      .on('error', function (error) {
+        if (!error.toString().includes('-32601')) {
+          if (error.message) {
+            return callback(error.message)
+          }
+          callback(error)
+        }
+      })
   }
 
-  getCover = async (payload) => {
+  async getCover(payload) {
+    const _arNftGetToken = async (insuranceContract, quotationContract, claimContract, account, web3, tokenIndex) => {
+      const tokenData = await insuranceContract.methods.getToken(tokenIndex).call({ from: account.address })
+
+      // console.log({ tokenData })
+      const { cid: coverId, scAddress, currencyCode, coverPrice, validUntil, sumAssured, claimId } = tokenData
+
+      const claimStatus = (
+        await quotationContract.methods.getscAddressOfCover(coverId).call({ from: account.address })
+      )[1]
+
+      const coverStatus = await claimContract.methods.getClaimbyIndex(claimId).call({ from: account.address })
+
+      return {
+        coverId,
+        tokenIndex,
+        address: scAddress,
+        claimStatus,
+        coverStatus,
+        coverCurrencyDisplay: web3.utils.hexToAscii(currencyCode),
+        coverPriceDisplay: web3.utils.fromWei(coverPrice, 'ether'),
+        expirationTimestamp: validUntil,
+        coverAmount: sumAssured,
+      }
+    }
+
+    const _yNftTokens = async (insuranceContract, quotationContract, claimContract, account, web3, tokenIndex) => {
+      const token = await insuranceContract.methods.tokens(tokenIndex).call({ from: account.address })
+
+      token.address = (
+        await quotationContract.methods.getscAddressOfCover(token.coverId).call({ from: account.address })
+      )[1]
+
+      token.coverStatus = await claimContract.methods.getClaimbyIndex(token.claimId).call({ from: account.address })
+
+      token.tokenIndex = tokenIndex
+      token.coverCurrencyDisplay = web3.utils.hexToAscii(token.coverCurrency)
+      token.coverPriceDisplay = web3.utils.fromWei(token.coverPrice, 'ether')
+
+      return token
+    }
+
     try {
       // console.log('GETTING COVER')
-      const web3 = this._getProvider()
+      const web3 = await this._getProvider()
       const account = store.getStore('account')
       const contracts = store.getStore('contracts')
+      const currentNftContract = store.getStore('currentNftContract')
 
       // console.log(account)
-      // console.log(contracts)
-      const insuranceContract = new web3.eth.Contract(config.yInsureABI, config.yInsureAddress)
-      const quotationContract = new web3.eth.Contract(config.quotationABI, config.quotationAddress)
-      const claimContract = new web3.eth.Contract(config.claimABI, config.claimAddress)
+      // console.log({ contracts })
+      const coverArr = []
+      for (let [contractName, contractData] of Object.entries(NFT_CONTRACTS)) {
+        try {
+          const insuranceContract = new web3.eth.Contract(contractData.abi, contractData.address)
+          // console.log({ contractName })
+          const quotationContract = new web3.eth.Contract(config.quotationABI, config.quotationAddress)
+          const claimContract = new web3.eth.Contract(config.claimABI, config.claimAddress)
 
-      // console.log(insuranceContract)
+          // console.log(insuranceContract)
 
-      const balanceOf = await insuranceContract.methods.balanceOf(account.address).call({ from: account.address })
+          const balanceOf = await insuranceContract.methods.balanceOf(account.address).call({ from: account.address })
 
-      // console.log(balanceOf)
-      if(balanceOf > 0) {
-        // console.log(Array.from(Array(parseInt(balanceOf)).keys()))
-        var arr = Array.from(Array(parseInt(balanceOf)).keys());
+          // console.log({ balanceOf, contractName, contractData })
+          if (balanceOf > 0) {
+            // console.log(Array.from(Array(parseInt(balanceOf)).keys()))
+            let arr = Array.from(Array(parseInt(balanceOf)).keys())
 
-        // console.log(arr)
-        async.map(arr, async (index, callback, c) => {
+            // console.log({ arr })
 
-          // console.log(index)
-          try {
-            const tokenIndex = await insuranceContract.methods.tokenOfOwnerByIndex(account.address, index).call({ from: account.address })
-            // console.log(tokenIndex)
-            const token = await insuranceContract.methods.tokens(tokenIndex).call({ from: account.address })
-            // console.log(token)
-            let claimStatus = await claimContract.methods.getClaimbyIndex(token.claimId).call({ from: account.address })
-            const address = await quotationContract.methods.getscAddressOfCover(token.coverId).call({ from: account.address })
-            // console.log(address)
+            const resultArr = await (async () => {
+              return new Promise((resolve, reject) => {
+                asyncMap(
+                  arr,
+                  async (index, callback, c) => {
+                    // console.log(index)
+                    try {
+                      const tokenIndex = await insuranceContract.methods
+                        .tokenOfOwnerByIndex(account.address, index)
+                        .call({ from: account.address })
+                      // console.log({ tokenIndex })
+                      // console.log({ contractName })
+                      const token = ['arNFTv1', 'arNFTv2'].includes(contractName)
+                        ? await _arNftGetToken(
+                            insuranceContract,
+                            quotationContract,
+                            claimContract,
+                            account,
+                            web3,
+                            tokenIndex
+                          )
+                        : await _yNftTokens(
+                            insuranceContract,
+                            quotationContract,
+                            claimContract,
+                            account,
+                            web3,
+                            tokenIndex
+                          )
+                      // console.log({ token })
+                      token.insuranceContractName = contractData.title
+                      token.insuranceContractAddress = contractData.address
 
-            token.tokenIndex = tokenIndex
-            token.address = address[1]
-            token.coverStatus = claimStatus
-            token.coverCurrencyDisplay = web3.utils.hexToAscii(token.coverCurrency)
-            token.coverPriceDisplay = web3.utils.fromWei(token.coverPrice, "ether")
+                      let contractDetails = contracts.filter((contract) => {
+                        return contract.address === token.address
+                      })
 
-            let contractDetails = contracts.filter((contract) => {
-              return contract.address === token.address
-            })
+                      // console.log(contractDetails)
+                      if (contractDetails.length > 0) {
+                        token.logo = contractDetails[0].logo
+                        token.name = contractDetails[0].name
+                      }
 
-            // console.log(contractDetails)
-            if(contractDetails.length > 0) {
-              token.logo = contractDetails[0].logo
-              token.name = contractDetails[0].name
-            }
+                      if (callback) {
+                        callback(null, token)
+                      } else {
+                        return token
+                      }
+                    } catch (ex) {
+                      console.log(ex)
+                      if (callback) {
+                        callback(null, null)
+                      } else {
+                        return null
+                      }
+                    }
+                  },
+                  (err, data) => {
+                    if (err) reject(err)
+                    resolve(data)
+                  }
+                )
+              })
+            })()
 
-            // console.log(token)
-            if(callback) {
-              callback(null, token)
-            } else {
-              return token
-            }
-          } catch (ex) {
-            console.log(ex)
-            if(callback) {
-              callback(null, null)
-            } else {
-              return null
-            }
+            coverArr.push(...resultArr)
           }
-
-        }, (err, data) => {
-          // console.log('RETURNED')
-          if(err) {
-            console.log(err)
-            emitter.emit(ERROR, err)
-            return emitter.emit(SNACKBAR_ERROR, err)
-          }
-
-          // console.log(data)
-          store.setStore({ cover: data })
-          emitter.emit(COVER_RETURNED, data)
-        })
-      } else {
-        // console.log('No balance of here.')
-        store.setStore({ cover: [] })
-        emitter.emit(COVER_RETURNED, [])
+        } catch (coverError) {
+          // console.log({ coverError })
+          emitter.emit(ERROR, coverError)
+          emitter.emit(SNACKBAR_ERROR, coverError.message || coverError)
+        }
       }
-
+      // console.log({ coverArr })
+      store.setStore({ cover: coverArr })
+      emitter.emit(COVER_RETURNED, coverArr)
     } catch (ex) {
-      console.log(ex)
+      // console.log({ ex })
       emitter.emit(ERROR, ex)
       emitter.emit(SNACKBAR_ERROR, ex)
     }
   }
 
+  // claim = async (payload) => {
+  //   const account = store.getStore('account')
+  //   const { contractId } = payload.content
+
+  //   this._callClaim(contractId, account, (err, data) => {
+  //     if (err) {
+  //       emitter.emit(ERROR, err)
+  //       emitter.emit(SNACKBAR_ERROR, err)
+  //       return
+  //     }
+
+  //     emitter.emit(CLAIM_RETURNED, data)
+  //   })
+  // }
+
+  // _callClaim = async (contractId, account, callback) => {
+  //   const web3 = this._getProvider()
+
+  //   let insuranceContract = new web3.eth.Contract(config.yInsureABI, config.yInsureAddress)
+
+  //   insuranceContract.methods
+  //     .submitClaim(contractId)
+  //     .send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
+  //     .on('transactionHash', function (hash) {
+  //       callback(null, hash)
+  //     })
+  //     .on('confirmation', function (confirmationNumber, receipt) {
+  //       if (confirmationNumber === 2) {
+  //         emitter.emit(SNACKBAR_TRANSACTION_CONFIRMED, receipt.transactionHash)
+  //       }
+  //     })
+  //     .on('receipt', function (receipt) {
+  //       emitter.emit(SNACKBAR_TRANSACTION_RECEIPT, receipt.transactionHash)
+  //     })
+  //     .on('error', function (error) {
+  //       if (!error.toString().includes('-32601')) {
+  //         if (error.message) {
+  //           return callback(error.message)
+  //         }
+  //         callback(error)
+  //       }
+  //     })
+  // }
+
   claim = async (payload) => {
-    const account = store.getStore('account')
-    const { contractId } = payload.content
-
-    this._callClaim(contractId, account, (err, data) => {
-      if(err) {
-        emitter.emit(ERROR, err)
-        emitter.emit(SNACKBAR_ERROR, err)
-        return
+    try {
+      const account = store.getStore('account')
+      const { contract } = payload.content
+      if (!contract || !contract.coverId || !contract.address) {
+        console.log({ contract })
+        throw new Error('Something went wrong')
       }
-
+      const data = await this._callClaim(contract, account)
       emitter.emit(CLAIM_RETURNED, data)
-    })
+    } catch (err) {
+      emitter.emit(ERROR, err)
+      emitter.emit(SNACKBAR_ERROR, err)
+    }
   }
 
-  _callClaim = async (contractId, account, callback) => {
-    const web3 = this._getProvider()
+  _callClaim = async (contract, account) => {
+    try {
+      console.log({ contract, config })
+      const web3Context = store.getStore('web3context')
+      const web3 = new Web3(web3Context.library.provider)
+      const arNftContractInstance = new web3.eth.Contract(config.arNftV2ABI, config.arNftV2Address)
 
-    let insuranceContract = new web3.eth.Contract(config.yInsureABI, config.yInsureAddress)
+      const baseUrl = 'https://app.nexusmutual.io/cover/proof-of-loss/add-affected-addresses'
+      window.open(`${baseUrl}?coverId=${contract.coverId}&owner=${contract.address}`, '_blank')
 
-    insuranceContract.methods.submitClaim(contractId).send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
-    .on('transactionHash', function(hash){
-      callback(null, hash)
-    })
-    .on('confirmation', function(confirmationNumber, receipt){
-      if(confirmationNumber === 2) {
-        emitter.emit(SNACKBAR_TRANSACTION_CONFIRMED, receipt.transactionHash)
-      }
-    })
-    .on('receipt', function(receipt){
-      emitter.emit(SNACKBAR_TRANSACTION_RECEIPT, receipt.transactionHash)
-    })
-    .on('error', function(error) {
-      if (!error.toString().includes("-32601")) {
-        if(error.message) {
-          return callback(error.message)
-        }
-        callback(error)
-      }
-    })
+      const gasPrice = await this._getGasPrice()
+      const submitClaimResponse = await arNftContractInstance.methods.submitClaim(contract.coverId).send({
+        from: account.address,
+        value: '0',
+        gasPrice: web3.utils.toWei(gasPrice, 'gwei'),
+      })
+      return submitClaimResponse
+    } catch (e) {
+      console.error(e)
+      emitter.emit(SNACKBAR_ERROR, e.message)
+      return false
+    }
   }
 
   redeem = async (payload) => {
@@ -697,7 +834,7 @@ class Store {
     const { contractId } = payload.content
 
     this._callRedeem(contractId, account, (err, data) => {
-      if(err) {
+      if (err) {
         emitter.emit(ERROR, err)
         emitter.emit(SNACKBAR_ERROR, err)
         return
@@ -712,26 +849,70 @@ class Store {
 
     let insuranceContract = new web3.eth.Contract(config.yInsureABI, config.yInsureAddress)
 
-    insuranceContract.methods.redeemClaim(contractId).send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
-    .on('transactionHash', function(hash){
-      callback(null, hash)
-    })
-    .on('confirmation', function(confirmationNumber, receipt){
-      if(confirmationNumber === 2) {
-        emitter.emit(SNACKBAR_TRANSACTION_CONFIRMED, receipt.transactionHash)
-      }
-    })
-    .on('receipt', function(receipt){
-      emitter.emit(SNACKBAR_TRANSACTION_RECEIPT, receipt.transactionHash)
-    })
-    .on('error', function(error) {
-      if (!error.toString().includes("-32601")) {
-        if(error.message) {
-          return callback(error.message)
+    insuranceContract.methods
+      .redeemClaim(contractId)
+      .send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
+      .on('transactionHash', function (hash) {
+        callback(null, hash)
+      })
+      .on('confirmation', function (confirmationNumber, receipt) {
+        if (confirmationNumber === 2) {
+          emitter.emit(SNACKBAR_TRANSACTION_CONFIRMED, receipt.transactionHash)
         }
-        callback(error)
-      }
-    })
+      })
+      .on('receipt', function (receipt) {
+        emitter.emit(SNACKBAR_TRANSACTION_RECEIPT, receipt.transactionHash)
+      })
+      .on('error', function (error) {
+        if (!error.toString().includes('-32601')) {
+          if (error.message) {
+            return callback(error.message)
+          }
+          callback(error)
+        }
+      })
+  }
+
+  swap = async (payload) => {
+    try {
+      const account = store.getStore('account')
+      const { contract } = payload.content
+      const data = await this._callSwap(contract, account)
+      emitter.emit(SWAP_RETURNED, data)
+    } catch (err) {
+      emitter.emit(ERROR, err)
+      emitter.emit(SNACKBAR_ERROR, err)
+    }
+  }
+
+  _callSwap = async (contract) => {
+    try {
+      const account = store.getStore('account')
+      const web3 = this._getProvider()
+      const arNftContractInstance = new web3.eth.Contract(config.arNftV2ABI, config.arNftV2Address)
+      const yNftContractInstance = new web3.eth.Contract(config.yInsureABI, config.yInsureAddress)
+      const gasPrice = (await axios(config.gasPriceAPI)).data.fast.toFixed(0)
+      const approved = await yNftContractInstance.methods.approve(config.arNftV2Address, contract.tokenIndex).send({
+        from: account.address,
+        value: '0',
+        gasPrice: web3.utils.toWei(gasPrice, 'gwei'),
+      })
+
+      console.log({ approved })
+
+      const swapped = await arNftContractInstance.methods.swapYnft(contract.tokenIndex).send({
+        from: account.address,
+        value: '0',
+        gasPrice: web3.utils.toWei(gasPrice, 'gwei'),
+      })
+
+      console.log({ swapped })
+      return { approved, swapped }
+    } catch (e) {
+      console.error(e)
+      emitter.emit(SNACKBAR_ERROR, e.message)
+      return false
+    }
   }
 
   _checkApproval = async (asset, account, amount, contract, callback) => {
@@ -740,24 +921,26 @@ class Store {
       const erc20Contract = new web3.eth.Contract(config.erc20ABI, asset.address)
       const allowance = await erc20Contract.methods.allowance(account.address, contract).call({ from: account.address })
 
-      let ethAllowance = web3.utils.fromWei(allowance, "ether")
+      let ethAllowance = web3.utils.fromWei(allowance, 'ether')
       if (asset.decimals !== 18) {
-        ethAllowance = (allowance*10**asset.decimals).toFixed(0);
+        ethAllowance = (allowance * 10 ** asset.decimals).toFixed(0)
       }
 
-      var amountToSend = web3.utils.toWei('999999999', "ether")
+      var amountToSend = web3.utils.toWei('999999999', 'ether')
       if (asset.decimals !== 18) {
-        amountToSend = (999999999*10**asset.decimals).toFixed(0);
+        amountToSend = (999999999 * 10 ** asset.decimals).toFixed(0)
       }
 
-      if(parseFloat(ethAllowance) < parseFloat(amount)) {
-        await erc20Contract.methods.approve(contract, amountToSend).send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
+      if (parseFloat(ethAllowance) < parseFloat(amount)) {
+        await erc20Contract.methods
+          .approve(contract, amountToSend)
+          .send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
         callback()
       } else {
         callback()
       }
-    } catch(error) {
-      if(error.message) {
+    } catch (error) {
+      if (error.message) {
         return callback(error.message)
       }
       callback(error)
@@ -767,13 +950,13 @@ class Store {
   _getGasPrice = async () => {
     try {
       const url = config.gasPriceAPI
-      const priceString = await rp(url);
+      const priceString = await rp(url)
       const priceJSON = JSON.parse(priceString)
-      if(priceJSON) {
+      if (priceJSON) {
         return priceJSON.fast.toFixed(0)
       }
       return store.getStore('universalGasPrice')
-    } catch(e) {
+    } catch (e) {
       console.log(e)
       return store.getStore('universalGasPrice')
     }
@@ -781,24 +964,24 @@ class Store {
 
   _getProvider = () => {
     const web3context = store.getStore('web3context')
-    if(!web3context) {
+    if (!web3context) {
       return null
     }
     const provider = web3context.library.provider
-    if(!provider) {
+    if (!provider) {
       return null
     }
 
-    const web3 = new Web3(provider);
+    const web3 = new Web3(provider)
 
     return web3
   }
 }
 
-var store = new Store();
+var store = new Store()
 
 export default {
   store: store,
   dispatcher: dispatcher,
-  emitter: emitter
-};
+  emitter: emitter,
+}

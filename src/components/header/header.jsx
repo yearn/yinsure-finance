@@ -1,34 +1,30 @@
 import React, { Component } from 'react'
-import { withStyles } from '@material-ui/core/styles';
-import {
-  Typography
-} from '@material-ui/core';
-import { withRouter } from "react-router-dom";
+import { withStyles } from '@material-ui/core/styles'
+import { Typography } from '@material-ui/core'
+import { withRouter } from 'react-router-dom'
 import { colors } from '../../theme'
+import ArmorIcon from '../icons/ArmorIcon'
 
-import {
-  CONNECTION_CONNECTED,
-  CONNECTION_DISCONNECTED,
-} from '../../constants'
+import { CONNECTION_CONNECTED, CONNECTION_DISCONNECTED } from '../../constants'
 
 import UnlockModal from '../unlock/unlockModal.jsx'
 
-import Store from "../../stores";
+import Store from '../../stores'
 const emitter = Store.emitter
 const store = Store.store
 
-const styles = theme => ({
+const styles = (theme) => ({
   root: {
     verticalAlign: 'top',
     width: '100%',
     display: 'flex',
     [theme.breakpoints.down('sm')]: {
-      marginBottom: '40px'
-    }
+      marginBottom: '40px',
+    },
   },
   headerV2: {
     background: colors.white,
-    border: '1px solid '+colors.borderBlue,
+    border: '1px solid ' + colors.borderBlue,
     borderTop: 'none',
     width: '100%',
     borderRadius: '0px 0px 50px 50px',
@@ -38,17 +34,17 @@ const styles = theme => ({
     justifyContent: 'center',
     [theme.breakpoints.down('sm')]: {
       justifyContent: 'space-between',
-      padding: '16px 24px'
-    }
+      padding: '16px 24px',
+    },
   },
   icon: {
     display: 'flex',
     alignItems: 'center',
     flex: 1,
-    cursor: 'pointer'
+    cursor: 'pointer',
   },
   links: {
-    display: 'flex'
+    display: 'flex',
   },
   link: {
     padding: '12px 0px',
@@ -56,18 +52,18 @@ const styles = theme => ({
     cursor: 'pointer',
     '&:hover': {
       paddingBottom: '9px',
-      borderBottom: "3px solid "+colors.borderBlue,
+      borderBottom: '3px solid ' + colors.borderBlue,
     },
   },
   title: {
-    textTransform: 'capitalize'
+    textTransform: 'capitalize',
   },
   linkActive: {
     padding: '12px 0px',
     margin: '0px 12px',
     cursor: 'pointer',
     paddingBottom: '9px',
-    borderBottom: "3px solid "+colors.borderBlue,
+    borderBottom: '3px solid ' + colors.borderBlue,
   },
   account: {
     display: 'flex',
@@ -75,8 +71,8 @@ const styles = theme => ({
     justifyContent: 'flex-end',
     flex: 1,
     [theme.breakpoints.down('sm')]: {
-      flex: '0'
-    }
+      flex: '0',
+    },
   },
   walletAddress: {
     padding: '12px',
@@ -86,20 +82,20 @@ const styles = theme => ({
     alignItems: 'center',
     cursor: 'pointer',
     '&:hover': {
-      border: "2px solid "+colors.borderBlue,
-      background: 'rgba(47, 128, 237, 0.1)'
+      border: '2px solid ' + colors.borderBlue,
+      background: 'rgba(47, 128, 237, 0.1)',
     },
     [theme.breakpoints.down('sm')]: {
       display: 'flex',
       position: 'absolute',
       top: '90px',
-      border: "1px solid "+colors.borderBlue,
-      background: colors.white
-    }
+      border: '1px solid ' + colors.borderBlue,
+      background: colors.white,
+    },
   },
   walletTitle: {
     flex: 1,
-    color: colors.darkGray
+    color: colors.darkGray,
   },
   connectedDot: {
     background: colors.compoundGreen,
@@ -108,109 +104,160 @@ const styles = theme => ({
     width: '10px',
     height: '10px',
     marginRight: '3px',
-    marginLeft:'6px'
+    marginLeft: '6px',
   },
   name: {
     paddingLeft: '24px',
+    display: 'flex',
+    flexDirection: 'column',
     [theme.breakpoints.down('sm')]: {
       display: 'none',
-    }
-  }
-});
+    },
+  },
+  logoWrapper: {
+    flex: 1,
+  },
+  poweredByArmor: {
+    display: 'flex',
+    justifyContent: 'center',
+    maxWidth: '150px',
+    width: '100%',
+    margin: '0 0 0 auto',
+    textDecoration: 'none',
+
+    '& > span': {
+      fontSize: '12px',
+      marginRight: '5px',
+    },
+
+    padding: '2px 3px',
+    border: '2px solid rgb(174, 174, 174)',
+    borderRadius: '50px',
+    display: 'flex',
+    alignItems: 'center',
+    cursor: 'pointer',
+    '&:hover': {
+      border: '2px solid ' + colors.borderBlue,
+      background: 'rgba(47, 128, 237, 0.1)',
+    },
+    '&:active': {
+      color: '#000',
+    },
+    '&:visited': {
+      color: '#000',
+    },
+  },
+})
 
 class Header extends Component {
-
   constructor(props) {
     super()
 
     this.state = {
       account: store.getStore('account'),
-      modalOpen: false
+      modalOpen: false,
     }
   }
 
   componentWillMount() {
-    emitter.on(CONNECTION_CONNECTED, this.connectionConnected);
-    emitter.on(CONNECTION_DISCONNECTED, this.connectionDisconnected);
+    emitter.on(CONNECTION_CONNECTED, this.connectionConnected)
+    emitter.on(CONNECTION_DISCONNECTED, this.connectionDisconnected)
   }
 
   componentWillUnmount() {
-    emitter.removeListener(CONNECTION_CONNECTED, this.connectionConnected);
-    emitter.removeListener(CONNECTION_DISCONNECTED, this.connectionDisconnected);
+    emitter.removeListener(CONNECTION_CONNECTED, this.connectionConnected)
+    emitter.removeListener(CONNECTION_DISCONNECTED, this.connectionDisconnected)
   }
 
   connectionConnected = () => {
     this.setState({ account: store.getStore('account') })
-  };
+  }
 
   connectionDisconnected = () => {
     this.setState({ account: store.getStore('account') })
   }
 
   render() {
-    const {
-      classes
-    } = this.props;
+    const { classes } = this.props
 
-    const {
-      account,
-      modalOpen
-    } = this.state
+    const { account, modalOpen } = this.state
 
-    var address = null;
+    var address = null
     if (account.address) {
-      address = account.address.substring(0,6)+'...'+account.address.substring(account.address.length-4,account.address.length)
+      address =
+        account.address.substring(0, 6) +
+        '...' +
+        account.address.substring(account.address.length - 4, account.address.length)
     }
 
     return (
-      <div className={ classes.root }>
-        <div className={ classes.headerV2 }>
-          <div className={ classes.icon }>
+      <div className={classes.root}>
+        <div className={classes.headerV2}>
+          <div className={classes.icon}>
             <img
               alt=""
-              src={ require('../../assets/YFI-logo.png') }
-              height={ '40px' }
-              onClick={ () => { this.nav('') } }
+              src={require('../../assets/YFI-logo.png')}
+              height={'40px'}
+              onClick={() => {
+                this.nav('')
+              }}
             />
-            <Typography variant={ 'h3'} className={ classes.name } onClick={ () => { this.nav('') } }>yinsure.finance</Typography>
+            <Typography
+              variant={'h3'}
+              className={classes.name}
+              onClick={() => {
+                this.nav('')
+              }}
+            >
+              yinsure.finance
+            </Typography>
           </div>
-          <div className={ classes.links }>
-            { this.renderLink('dashboard') }
-            { this.renderLink('add') }
+          <div className={classes.links}>
+            {this.renderLink('dashboard')}
+            {this.renderLink('add')}
           </div>
-          <div className={ classes.account }>
-            { address &&
-              <Typography variant={ 'h4'} className={ classes.walletAddress } noWrap onClick={this.addressClicked} >
-                { address }
-                <div className={ classes.connectedDot }></div>
+          <div className={classes.account}>
+            {address && (
+              <Typography variant={'h4'} className={classes.walletAddress} noWrap onClick={this.addressClicked}>
+                {address}
+                <div className={classes.connectedDot}></div>
               </Typography>
-            }
-            { !address &&
-              <Typography variant={ 'h4'} className={ classes.walletAddress } noWrap onClick={this.addressClicked} >
+            )}
+            {!address && (
+              <Typography variant={'h4'} className={classes.walletAddress} noWrap onClick={this.addressClicked}>
                 Connect your wallet
               </Typography>
-            }
+            )}
           </div>
         </div>
-        { modalOpen && this.renderModal() }
+        {modalOpen && this.renderModal()}
       </div>
     )
   }
 
   renderLink = (screen) => {
-    const {
-      classes
-    } = this.props;
+    const { classes } = this.props
 
     return (
-      <div className={ (window.location.pathname==='/'+screen || (window.location.pathname==='/' && screen==='dashboard') )?classes.linkActive:classes.link } onClick={ () => { this.nav(screen) } }>
-        <Typography variant={'h4'} className={ `title` }>{ screen }</Typography>
+      <div
+        className={
+          window.location.pathname === '/' + screen || (window.location.pathname === '/' && screen === 'dashboard')
+            ? classes.linkActive
+            : classes.link
+        }
+        onClick={() => {
+          this.nav(screen)
+        }}
+      >
+        <Typography variant={'h4'} className={`title`}>
+          {screen}
+        </Typography>
       </div>
     )
   }
 
   nav = (screen) => {
-    this.props.history.push('/'+screen)
+    this.props.history.push('/' + screen)
   }
 
   addressClicked = () => {
@@ -222,10 +269,8 @@ class Header extends Component {
   }
 
   renderModal = () => {
-    return (
-      <UnlockModal closeModal={ this.closeModal } modalOpen={ this.state.modalOpen } />
-    )
+    return <UnlockModal closeModal={this.closeModal} modalOpen={this.state.modalOpen} />
   }
 }
 
-export default withRouter(withStyles(styles)(Header));
+export default withRouter(withStyles(styles)(Header))
